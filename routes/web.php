@@ -9,3 +9,4 @@ Route::post('/login', [LoginController::class, 'login']);
 Route::get('/logout', [LoginController::class, 'logout'])->name('logout');
 
 Route::get('/home', [HomeController::class, 'index'])->name('home');
+Route::get('/calculation', [HomeController::class, 'calculation'])->name('home.calculation');
