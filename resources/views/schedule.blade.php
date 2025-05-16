@@ -36,7 +36,8 @@
                         <td>
                             @if ($data)
                                 {{-- <div style="width: 20px; height: 20px; border-radius: 50%; background-color: {{ $bgColor }};"></div> --}}
-                                {{ $data['text'] }}
+                                <!-- {{ $data['text'] }} -->
+                                  {!! nl2br(e($data['text'])) !!}
                             @else
                                 -
                             @endif

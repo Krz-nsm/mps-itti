@@ -44,7 +44,7 @@
                                     </div>
 
                                     <div class="col-xl-3 col-md-6 mb-3">
-                                        <label for="txQty" class="form-label">Qty</label>
+                                        <label for="txQty" class="form-label">Qty / Kg</label>
                                         <input type="number" class="form-control" id="txQty" placeholder="0">
                                     </div>
                                     <div class="col-xl-3 col-md-6 mb-3">
@@ -305,48 +305,48 @@
                 }
             });
 
-            function sendCalculationRequest() {
-    const noItem = selectItem.val();
-    const qty = inputQty.value;
-    const date1 = inputDate1.value;
-    const date2 = inputDate2.value;
-    const redDays = parseInt(inputRedDate.value || '0');
+        function sendCalculationRequest() {
+            const noItem = selectItem.val();
+            const qty = inputQty.value;
+            const date1 = inputDate1.value;
+            const date2 = inputDate2.value;
+            const redDays = parseInt(inputRedDate.value || '0');
 
-    if (!noItem || !qty || !date1 || !date2) return;
+            if (!noItem || !qty || !date1 || !date2) return;
 
-    // ✅ Reset mesin yang sudah dipilih
-    resetSelectedMachines();
+            // ✅ Reset mesin yang sudah dipilih
+            resetSelectedMachines();
 
-    const url = new URL("{{ route('home.calculation') }}");
-    url.searchParams.append("no_item", noItem);
-    url.searchParams.append("txQty", qty);
-    url.searchParams.append("date1", date1);
-    url.searchParams.append("date2", date2);
+            const url = new URL("{{ route('home.calculation') }}");
+            url.searchParams.append("no_item", noItem);
+            url.searchParams.append("txQty", qty);
+            url.searchParams.append("date1", date1);
+            url.searchParams.append("date2", date2);
 
-    fetch(url)
-        .then(response => response.json())
-        .then(data => {
-            spanNoItem.textContent = data.no_item || '-';
-            spanMcQty.textContent = data.jumlah_1mesin || '-';
-            spanQty.textContent = data.calculation || '-';
-            spanDate.textContent = data.delivery_date || '-';
-            const rawWorkdays = parseInt(data.workdays_until_delivery || 0);
-            const effectiveWorkdays = Math.max(rawWorkdays - redDays, 1);
-
-            spanDays.textContent = effectiveWorkdays;
-            const jumlahPerMesin = parseFloat(data.jumlah_1mesin || 0);
-            const mesinDibutuhkan = Math.ceil(jumlahPerMesin / effectiveWorkdays);
-
-            spanMachine.textContent = mesinDibutuhkan;
-
-            console.log(
-                `Workdays Asli: ${rawWorkdays}, Libur Tambahan: ${redDays}, Workdays Efektif: ${effectiveWorkdays}, Mesin: ${mesinDibutuhkan}`
-            );
-        })
-        .catch(error => {
-            console.error("Gagal fetch:", error);
-        });
-}
+            fetch(url)
+                .then(response => response.json())
+                .then(data => {
+                    spanNoItem.textContent = data.no_item || '-';
+                    spanMcQty.textContent = data.jumlah_1mesin || '-';
+                    spanQty.textContent = data.calculation || '-';
+                    spanDate.textContent = data.delivery_date || '-';
+                    const rawWorkdays = parseInt(data.workdays_until_delivery || 0);
+                    const effectiveWorkdays = Math.max(rawWorkdays - redDays, 1);
+                
+                    spanDays.textContent = effectiveWorkdays;
+                    const jumlahPerMesin = parseFloat(data.jumlah_1mesin || 0);
+                    const mesinDibutuhkan = Math.ceil(jumlahPerMesin / effectiveWorkdays);
+                
+                    spanMachine.textContent = mesinDibutuhkan;
+                
+                    console.log(
+                        `Workdays Asli: ${rawWorkdays}, Libur Tambahan: ${redDays}, Workdays Efektif: ${effectiveWorkdays}, Mesin: ${mesinDibutuhkan}`
+                    );
+                })
+                .catch(error => {
+                    console.error("Gagal fetch:", error);
+                });
+            }
 
             selectItem.on('change', sendCalculationRequest);
             inputQty.addEventListener('input', sendCalculationRequest);
@@ -372,7 +372,6 @@
 
             return !isOverlap;
         }
-
 
         function refreshMachineAvailability() {
             const inputStart = parseDate(document.getElementById('tsDate').value);
@@ -496,26 +495,26 @@
                     console.error("Gagal fetch:", error);
                 });
         }
-       function resetSelectedMachines() {
-    const selectedContainer = document.getElementById("selected-machines");
-    const availableContainer = document.getElementById("available-machines");
-    const selectedCards = selectedContainer.querySelectorAll(".col-xl-3"); // asumsi class card
+        function resetSelectedMachines() {
+            const selectedContainer = document.getElementById("selected-machines");
+            const availableContainer = document.getElementById("available-machines");
+            const selectedCards = selectedContainer.querySelectorAll(".col-xl-3"); // asumsi class card
 
-    selectedCards.forEach(card => {
-        // Hapus tombol close jika ada
-        const closeBtn = card.querySelector('button');
-        if (closeBtn) closeBtn.remove();
+            selectedCards.forEach(card => {
+                // Hapus tombol close jika ada
+                const closeBtn = card.querySelector('button');
+                if (closeBtn) closeBtn.remove();
 
-        // Hapus style posisi relatif
-        card.style.position = '';
+                // Hapus style posisi relatif
+                card.style.position = '';
 
-        availableContainer.appendChild(card);
-    });
+                availableContainer.appendChild(card);
+            });
 
-        selectedMachines = [];
-        usedMesin = 0;
-        document.getElementById('calc_machine').textContent = '-';
-    }
+            selectedMachines = [];
+            usedMesin = 0;
+            document.getElementById('calc_machine').textContent = '-';
+        }
     </script>
     <script>
         document.getElementById('btSubmit').addEventListener('click', function() {
@@ -525,6 +524,9 @@
             const endDate = document.getElementById('txDate').value;
             const qtyPerDay = document.getElementById('calc_qty').textContent;
 
+            const dayNeed = document.getElementById('mc_qty').textContent;
+            const dayPlann = document.getElementById('calc_qty').textContent;
+
             const selectedMachineCards = document.querySelectorAll('#selected-machines .col-xl-3');
             const machines = Array.from(selectedMachineCards)
                 .map(card => card.dataset.code)
@@ -532,6 +534,11 @@
 
             if (!noItem || !qty || !startDate || !endDate || machines.length === 0 || !qtyPerDay) {
                 alert('Pastikan semua input dan mesin telah dipilih.');
+                return;
+            }
+
+            if(dayPlann - dayNeed <= 0){
+                alert('Range tanggal antara kebutuhan hari produksi sama tanngal input works daynya tidak sesuai.');
                 return;
             }
 
