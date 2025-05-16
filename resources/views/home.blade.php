@@ -516,7 +516,6 @@
         usedMesin = 0;
         document.getElementById('calc_machine').textContent = '-';
     }
-
     </script>
     <script>
         document.getElementById('btSubmit').addEventListener('click', function() {

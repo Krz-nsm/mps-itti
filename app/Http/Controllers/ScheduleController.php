@@ -177,8 +177,7 @@ public function dataFilter(Request $request)
         ->select(
             DB::raw('a.VALUEDECIMAL'),
             DB::raw('ROUND(a.VALUEDECIMAL * 24) AS CALCULATION'),
-            DB::raw("TRIM(p.SUBCODE02) || '-' || TRIM(p.SUBCODE03) AS hanger"),
-            DB::raw('TRIM(p.LONGDESCRIPTION) AS longdescription')
+            DB::raw("TRIM(p.SUBCODE02) || '-' || TRIM(p.SUBCODE03) AS hanger")
         )
         ->leftJoin('ADSTORAGE as a', function($join) {
             $join->on('a.UNIQUEID', '=', 'p.ABSUNIQUEID')
@@ -193,15 +192,22 @@ public function dataFilter(Request $request)
         ->limit(10)
         ->get();
 
+    // Menambahkan opsi kosong di awal hasil pencarian
     $formatted = $results->map(function ($item) {
         return [
             'id' => $item->hanger,
-            'text' => $item->hanger . ' | ' . $item->longdescription
+            'text' => $item->hanger
         ];
     });
 
+    $formatted->prepend([
+        'id' => '',
+        'text' => 'Pilih nomor hanger'
+    ]);
+
     return response()->json($formatted);
 }
+
 
 
 }
