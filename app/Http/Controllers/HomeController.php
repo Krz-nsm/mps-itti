@@ -72,10 +72,7 @@ class HomeController extends Controller
 
 
     $holidays = [
-        '2025-05-17',
-        '2025-05-20',
-        '2025-05-29',
-        '2025-06-01'
+
     ];
 
     $period = CarbonPeriod::create($today, $tgl_dlv);
@@ -108,4 +105,42 @@ public function machine(Request $request)
 {
     $mesin = DB::connection('sqlsrv')->select('EXEC sp_get_mesin_detail');
 }
+ public function store(Request $request)
+{
+    $validated = $request->validate([
+        'no_item'        => 'required|string',
+        'qty'            => 'required|numeric',
+        'qty_day'        => 'required|numeric',
+        'start_date'     => 'required|date',
+        'delivery_date'  => 'required|date',
+        'machines'       => 'required|array',
+        'machines.*'     => 'required|string'
+    ]);
+
+    $savedData = [];
+
+    foreach ($validated['machines'] as $machineCode) {
+        $dataToInsert = [
+            'item_code'     => $validated['no_item'],
+            'qty'           => $validated['qty'],
+            'qty_day'       => $validated['qty_day'],
+            'start_date'    => $validated['start_date'],
+            'end_date'      => $validated['delivery_date'],
+            'mesin_code'    => $machineCode,
+            'dept'          => 'KNT',
+            'datecreated'   => now(),
+        ];
+
+        DB::connection('sqlsrv')->table('schedule_mesin')->insert($dataToInsert);
+        $savedData[] = $dataToInsert;
+    }
+
+    return response()->json([
+        'status' => 'Success',
+        'message' => 'Data berhasil disimpan.',
+        'data' => $savedData
+    ]);
+}
+
+
 }
