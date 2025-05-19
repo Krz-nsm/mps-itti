@@ -4,6 +4,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\LoginController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\ScheduleController;
+use App\Http\Controllers\ListViewController;
 
 Route::get('/login', [LoginController::class, 'showLoginForm'])->name('login');
 Route::post('/login', [LoginController::class, 'login']);
@@ -16,6 +17,10 @@ Route::POST('/saveData', [HomeController::class, 'store'])->name('schedule.store
 
 Route::get('/schedule', [ScheduleController::class, 'index'])->name('schedule.index');
 Route::get('/data_filter', [ScheduleController::class, 'dataFilter'])->name('schedule.filterdata');
+
+Route::get('/view', [ListViewController::class, 'index'])->name('view');
+Route::get('/schedule/{item_code}', [ListViewController::class, 'getScheduleByItemCode'])->name('viewItem');
+
 
 
 // Route::middleware(['auth'])->group(function () {

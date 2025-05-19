@@ -86,122 +86,122 @@ class ScheduleController extends Controller
         // }
 
 
-public function index(Request $request)
-{
-    $view = $request->query('view', 'minggu');
-    $today = Carbon::today();
-    $endDate = $today->copy()->addDays(364);
+    public function index(Request $request)
+    {
+        $view = $request->query('view', 'minggu');
+        $today = Carbon::today();
+        $endDate = $today->copy()->addDays(364);
 
-    // Hari libur tambahan
-    $libur = [
-    ];
+        // Hari libur tambahan
+        $libur = [
+        ];
 
-    $tanggalKerja = [];
-    $tanggal = $today->copy();
+        $tanggalKerja = [];
+        $tanggal = $today->copy();
 
-    while ($tanggal <= $endDate) {
-        if ($tanggal->isSunday() || in_array($tanggal->toDateString(), $libur)) {
-            $tanggal->addDay();
-            continue;
-        }
-        $tanggalKerja[] = $tanggal->copy();
-        $tanggal->addDay();
-    }
-
-    $produksi = DB::connection('sqlsrv')->table('dbo.schedule_mesin')
-        ->whereDate('end_date', '>=', $today)
-        ->whereDate('start_date', '<=', $endDate)
-        ->get();
-
-    $dataPerMesin = [];
-    $colorMap = [];
-
-    foreach ($produksi as $item) {
-        $mesin = $item->mesin_code;
-        $itemCode = $item->datecreated;
-        $reqQty = $item->qty;
-
-        if (!isset($colorMap[$itemCode])) {
-            $colorMap[$itemCode] = sprintf('#%06X', mt_rand(0, 0xFFFFFF));
-        }
-
-        $startDate = Carbon::parse($item->start_date);
-        $endDateItem = Carbon::parse($item->end_date);
-        $rangeDates = $startDate->toPeriod($endDateItem, '1 day');
-        $totalQty = 0;
-        $hsilSum = 0;
-
-        // foreach ($rangeDates as $date) {
-        //     if ($date->isSunday() || in_array($date->toDateString(), $libur)) {
-        //         continue;
-        //     }
-
-        //     $totalQty += $item->qty_day;
-
-        //     $dataPerMesin[$mesin][$date->toDateString()] = [
-        //         'text' => "{$item->item_code} - Qty: " . number_format($totalQty, 0),
-        //         'item_code' => $itemCode,
-        //         'color' => $colorMap[$itemCode],
-        //     ];
-        // }
-        $workingDates = [];
-        foreach ($rangeDates as $date) {
-            if ($date->isSunday() || in_array($date->toDateString(), $libur)) {
+        while ($tanggal <= $endDate) {
+            if ($tanggal->isSunday() || in_array($tanggal->toDateString(), $libur)) {
+                $tanggal->addDay();
                 continue;
             }
-            $workingDates[] = $date;
+            $tanggalKerja[] = $tanggal->copy();
+            $tanggal->addDay();
         }
 
-        $totalQty = 0;
-        $jumlahTanggal = count($workingDates);
+        $produksi = DB::connection('sqlsrv')->table('dbo.schedule_mesin')
+            ->whereDate('end_date', '>=', $today)
+            ->whereDate('start_date', '<=', $endDate)
+            ->get();
 
-        foreach ($workingDates as $index => $date) {
-            $tanggalStr = $date->toDateString();
-            $totalQty += $item->qty_day;
+        $dataPerMesin = [];
+        $colorMap = [];
 
-            // Tanggal terakhir
-            if ($index === $jumlahTanggal - 1) {
-                $displayQty = $reqQty;
-                $overQty = $totalQty - $reqQty;
+        foreach ($produksi as $item) {
+            $mesin = $item->mesin_code;
+            $itemCode = $item->datecreated;
+            $reqQty = $item->qty;
 
-                $text = "{$item->item_code} - Qty: " . number_format($displayQty, 0);
-                if ($overQty > 0) {
-                    $text .= "\nAvailable Qty: " . number_format($overQty, 0);
-                }
-            } else {
-                $text = "{$item->item_code} - Qty: " . number_format($totalQty, 0);
+            if (!isset($colorMap[$itemCode])) {
+                $colorMap[$itemCode] = sprintf('#%06X', mt_rand(0, 0xFFFFFF));
             }
 
-            $dataPerMesin[$mesin][$tanggalStr] = [
-                'text' => $text,
-                'item_code' => $itemCode,
-                'color' => $colorMap[$itemCode],
-            ];
+            $startDate = Carbon::parse($item->start_date);
+            $endDateItem = Carbon::parse($item->end_date);
+            $rangeDates = $startDate->toPeriod($endDateItem, '1 day');
+            $totalQty = 0;
+            $hsilSum = 0;
+
+            // foreach ($rangeDates as $date) {
+            //     if ($date->isSunday() || in_array($date->toDateString(), $libur)) {
+            //         continue;
+            //     }
+
+            //     $totalQty += $item->qty_day;
+
+            //     $dataPerMesin[$mesin][$date->toDateString()] = [
+            //         'text' => "{$item->item_code} - Qty: " . number_format($totalQty, 0),
+            //         'item_code' => $itemCode,
+            //         'color' => $colorMap[$itemCode],
+            //     ];
+            // }
+            $workingDates = [];
+            foreach ($rangeDates as $date) {
+                if ($date->isSunday() || in_array($date->toDateString(), $libur)) {
+                    continue;
+                }
+                $workingDates[] = $date;
+            }
+
+            $totalQty = 0;
+            $jumlahTanggal = count($workingDates);
+
+            foreach ($workingDates as $index => $date) {
+                $tanggalStr = $date->toDateString();
+                $totalQty += $item->qty_day;
+
+                // Tanggal terakhir
+                if ($index === $jumlahTanggal - 1) {
+                    $displayQty = $reqQty;
+                    $overQty = $totalQty - $reqQty;
+
+                    $text = "{$item->item_code} - Qty: " . number_format($displayQty, 0);
+                    if ($overQty > 0) {
+                        $text .= "\nAvailable Qty: " . number_format($overQty, 0);
+                    }
+                } else {
+                    $text = "{$item->item_code} - Qty: " . number_format($totalQty, 0);
+                }
+
+                $dataPerMesin[$mesin][$tanggalStr] = [
+                    'text' => $text,
+                    'item_code' => $itemCode,
+                    'color' => $colorMap[$itemCode],
+                ];
+            }
         }
-    }
 
-    // Membuat data untuk kalender
-    $events = [];
+        // Membuat data untuk kalender
+        $events = [];
 
-    foreach ($dataPerMesin as $mesin => $produksiPerTanggal) {
-        foreach ($produksiPerTanggal as $tanggal => $data) {
-            $events[] = [
-                'title' => "{$mesin} - {$data['text']}",
-                'start' => $tanggal,
-                'color' => $data['color'],
-            ];
+        foreach ($dataPerMesin as $mesin => $produksiPerTanggal) {
+            foreach ($produksiPerTanggal as $tanggal => $data) {
+                $events[] = [
+                    'title' => "{$mesin} - {$data['text']}",
+                    'start' => $tanggal,
+                    'color' => $data['color'],
+                ];
+            }
         }
-    }
 
-    return view('schedule', compact(
-        'view',
-        'tanggalKerja',
-        'dataPerMesin',
-        'today',
-        'colorMap',
-        'events'
-    ));
-}
+        return view('schedule', compact(
+            'view',
+            'tanggalKerja',
+            'dataPerMesin',
+            'today',
+            'colorMap',
+            'events'
+        ));
+    }
 
 public function dataFilter(Request $request)
 {
