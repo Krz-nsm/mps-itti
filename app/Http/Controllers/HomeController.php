@@ -19,6 +19,7 @@ class HomeController extends Controller
         }
 
         $mesin = DB::connection('sqlsrv')->select('EXEC sp_get_mesin_detail');
+        $groupedMesin = collect($mesin)->groupBy('jenis');
 
         $results = DB::connection('DB2')
             ->table('PRODUCT as p')
@@ -39,33 +40,30 @@ class HomeController extends Controller
         // return view('home', compact('mesin'));
 
         return view('home', [
-    'mesin' => $mesin,
-    'now' => Carbon::now(),
-    'filter' => $results
-    ]);
+            'groupedMesin' => $groupedMesin,
+            'now' => Carbon::now(),
+            'filter' => $results
+        ]);
     }
 
-    public function calculation(Request $request)
-    {
+    public function calculation(Request $request){
         $tgl_dlv = Carbon::parse($request->date2);
         $qty = (int) $request->txQty;
         $no_item = $request->no_item;
         $today = Carbon::parse($request->date1);
         [$subcode02, $subcode03] = explode('-', $request->no_item);
-        $results = DB::connection('DB2')
-                ->table('PRODUCT as p')
-                ->select(
-                    DB::raw('DISTINCT a.VALUEDECIMAL'),
-                    DB::raw('ROUND(a.VALUEDECIMAL * 24) AS CALCULATION'),
-                )
-                ->leftJoin('ADSTORAGE as a', function($join) {
-                    $join->on('a.UNIQUEID', '=', 'p.ABSUNIQUEID')
-                        ->where('a.FIELDNAME', '=', 'ProductionRate');
-                })
-                ->where('p.ITEMTYPECODE', 'KGF')
-                ->where('p.SUBCODE02', $subcode02)
-                ->where('p.SUBCODE03', $subcode03)
-                ->get();
+
+        $results = DB::connection('DB2')->select("
+            SELECT DISTINCT 
+                a.VALUEDECIMAL AS CALDAY,
+                a.VALUEDECIMAL * 24 AS CALCULATION
+            FROM PRODUCT p
+            LEFT JOIN ADSTORAGE a ON a.UNIQUEID = p.ABSUNIQUEID
+                AND a.FIELDNAME = 'ProductionRate'
+            WHERE p.ITEMTYPECODE = 'KGF'
+              AND p.SUBCODE02 = ?
+              AND p.SUBCODE03 = ?
+        ", [$subcode02, $subcode03]);
 
         $holidays = [
 
@@ -80,16 +78,17 @@ class HomeController extends Controller
             }
         }
 
-        // $count_machine = ceil($qty/($results[0]->calculation),2);
         $count_machine = ceil($qty / $results[0]->calculation);
         $kebutuhan_mesin = max(1, round($count_machine / max($workdays, 1), 0));
 
         return response()->json([
+            'start_date' => $today->toDateString(),
             'delivery_date' => $tgl_dlv->toDateString(),
             'today' => $today->toDateString(),
             'workdays_until_delivery' => $workdays,
             'qty' => $qty,
             'no_item' => $no_item,
+            'calday' => $results[0]->calday,
             'calculation' => $results[0]->calculation,
             'jumlah_1mesin' => $count_machine,
             'kebutuhan_mesin' => $kebutuhan_mesin,
@@ -97,60 +96,64 @@ class HomeController extends Controller
         ]);
     }
 
-public function machine(Request $request)
-{
-    $mesin = DB::connection('sqlsrv')->select('EXEC sp_get_mesin_detail');
-}
- public function store(Request $request)
-{
-    $validated = $request->validate([
-        'no_item'        => 'required|string',
-        'qty'            => 'required|numeric',
-        'qty_day'        => 'required|numeric',
-        'start_date'     => 'required|date',
-        'delivery_date'  => 'required|date',
-        'machines'       => 'required|array',
-        'machines.*'     => 'required|string'
-    ]);
-
-    $savedData = [];
-
-    $itemCode = $validated['no_item'];
-    $dateStr = now()->format('Ymd');
-
-    $count = DB::connection('sqlsrv')
-    ->table('schedule_mesin')
-    ->where('item_code', $itemCode)
-    ->whereDate('datecreated', now()->toDateString())
-    ->count();
-
-    $sequence = str_pad($count + 1, 5, '0', STR_PAD_LEFT);
-    $linkedId = "SC-{$itemCode}-{$dateStr}-{$sequence}";
-
-    foreach ($validated['machines'] as $machineCode) {
-
-        $dataToInsert = [
-            'item_code'     => $validated['no_item'],
-            'qty'           => $validated['qty'],
-            'qty_day'       => $validated['qty_day'],
-            'start_date'    => $validated['start_date'],
-            'end_date'      => $validated['delivery_date'],
-            'mesin_code'    => $machineCode,
-            'dept'          => 'KNT',
-            'datecreated'   => now(),
-            'linked_id_machine' => $linkedId
-        ];
-
-        DB::connection('sqlsrv')->table('schedule_mesin')->insert($dataToInsert);
-        $savedData[] = $dataToInsert;
+    public function machine(Request $request)
+    {
+        $mesin = DB::connection('sqlsrv')->select('EXEC sp_get_mesin_detail');
     }
 
-    return response()->json([
-        'status' => 'Success',
-        'message' => 'Data berhasil disimpan.',
-        'data' => $savedData
-    ]);
-}
+    public function store(Request $request)
+    {
+        $validated = $request->validate([
+            'no_item'        => 'required|string',
+            'qty'            => 'required|numeric',
+            'qty_day'        => 'required|numeric',
+            'start_date'     => 'required|date',
+            'delivery_date'  => 'required|date',
+            'machines'       => 'required|array',
+            'machines.*'     => 'required|string'
+        ]);
+
+        $savedData = [];
+
+        $itemCode = $validated['no_item'];
+        $dateStr = now()->format('Ymd');
+
+        $count = DB::connection('sqlsrv')
+        ->table('schedule_mesin')
+        ->where('item_code', $itemCode)
+        ->whereDate('datecreated', now()->toDateString())
+        ->count();
+
+        $sequence = str_pad($count + 1, 5, '0', STR_PAD_LEFT);
+        $linkedId = "SC-{$itemCode}-{$dateStr}-{$sequence}";
+
+        $jumlahMesin = count($validated['machines']);
+        $qtyDayPerMesin = $jumlahMesin > 0 ? ceil($validated['qty_day'] / $jumlahMesin) : 0;
+
+        foreach ($validated['machines'] as $machineCode) {
+
+            $dataToInsert = [
+                'item_code'     => $validated['no_item'],
+                'qty'           => $validated['qty'],
+                'qty_day'       => $validated['qty_day'],
+                'start_date'    => $validated['start_date'],
+                'end_date'      => $validated['delivery_date'],
+                'mesin_code'    => $machineCode,
+                'dept'          => 'KNT',
+                'datecreated'   => now(),
+                'linked_id_machine' => $linkedId
+            ];
+
+            DB::connection('sqlsrv')->table('schedule_mesin')->insert($dataToInsert);
+            $savedData[] = $dataToInsert;
+        }
+
+        return response()->json([
+            'status' => 'Success',
+            'message' => 'Data berhasil disimpan.',
+            'data' => $savedData
+        ]);
+    }
 
 
 }

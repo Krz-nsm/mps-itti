@@ -21,7 +21,7 @@
                   </div>
                   <div class="col-md-6 col-lg-7 d-flex align-items-center">
                     <div class="card-body p-4 p-lg-5 text-black">
-                      <form>
+                      <form id="loginForm">
                         <div class="d-flex align-items-center mb-3 pb-1">
                           <i class="fas fa-cubes fa-2x me-3" style="color: #ff6219;"></i>
                           <span class="h1 fw-bold mb-0">Logo</span>
@@ -40,9 +40,8 @@
                         </div>
       
                         <div class="pt-1 mb-4">
-                          <button data-mdb-button-init data-mdb-ripple-init class="btn btn-dark btn-lg btn-block" type="button" id="btLogin">Login</button>
+                          <button data-mdb-button-init data-mdb-ripple-init class="btn btn-dark btn-lg btn-block" type="submit" id="btLogin">Login</button>
                         </div>
-      
                         <a class="small text-muted" href="#!">Forgot password?</a>
                       </form>
                     </div>
@@ -67,7 +66,9 @@
         }
       });
     
-      $('#btLogin').on('click', function () {
+      $('#loginForm').on('submit', function (e) {
+        e.preventDefault();
+
         const username = $('#username').val();
         const password = $('#password').val();
       
@@ -90,7 +91,7 @@
         });
       
         $.ajax({
-          url: '{{ route("login") }}',
+          url: '{{ route("auth") }}',
           type: 'POST',
           data: {
             username: username,

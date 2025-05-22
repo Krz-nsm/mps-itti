@@ -3,7 +3,7 @@
 
 @section('content')
   <div class="table-responsive">
-    <table id="itemCodeTable" class="table table-bordered table-sm">
+    <table id="itemTable" class="table table-bordered table-hover">
       <thead>
         <tr>
           <th>Item Code</th>
@@ -11,61 +11,60 @@
       </thead>
       <tbody>
         @foreach($itemCode as $item)
-          <tr class="item-row" data-bs-toggle="collapse" data-bs-target="#collapse-{{ $item->item_code }}" aria-expanded="false" aria-controls="collapse-{{ $item->item_code }}" style="cursor:pointer;">
+          <tr class="item-row" data-item-code="{{ $item->item_code }}">
             <td>{{ $item->item_code }}</td>
           </tr>
-          <tr class="collapse" id="collapse-{{ $item->item_code }}">
-            <td>
-              <div class="card card-body" style="width: 100%;">
-                Konten untuk {{ $item->item_code }}
-              </div>
+          <tr class="collapse-row" id="collapse-{{ $item->item_code }}" style="display: none;">
+            <td colspan="1">
+              <div class="card card-body">Loading...</div>
             </td>
           </tr>
         @endforeach
       </tbody>
     </table>
   </div>
-
-  <script>
-    $(document).ready(function() {
-      $('#itemCodeTable').DataTable({
-        paging: false,
-        searching: false,
-        info: false
-      });
-
-      $('#itemCodeTable').on('click', '.item-row', function(e) {
-        var target = $(this).data('bs-target');
-        $('#itemCodeTable .collapse').not(target).collapse('hide');
-        $(target).collapse('toggle');
-      });
-    });
-  </script>
 @endsection
 
 @push('scripts')
   <link rel="stylesheet" href="https://cdn.datatables.net/1.13.5/css/jquery.dataTables.min.css">
   <script src="https://cdn.datatables.net/1.13.5/js/jquery.dataTables.min.js"></script>
 
-  <script>
-    $(document).ready(function() {
-      $('[data-bs-toggle="collapse"]').on('click', function() {
-        var itemCode = $.trim($(this).text());
-        var $collapseDiv = $('#collapse-' + itemCode);
-        var $cardBody = $collapseDiv.find('.card-body');
+<script>
+  $(document).ready(function () {
+    $('#itemTable').DataTable({
+      paging: false,
+      searching: false,
+      info: false
+    });
 
-        if ($cardBody.data('loaded')) {
-          return;
-        }
+    $('.item-row').on('click', function () {
+      var itemCode = $(this).data('item-code');
+      var $collapseRow = $('#collapse-' + itemCode);
+      var $cardBody = $collapseRow.find('.card-body');
 
-        $cardBody.html('<div>Loading data...</div>');
+      // Toggle collapse
+      if ($collapseRow.is(':visible')) {
+        $collapseRow.hide();
+        return;
+      }
 
-        $.ajax({
-          url: '/schedule/' + itemCode,
-          method: 'GET',
-          dataType: 'json',
-          success: function(data) {
-            var sqlData = data.schedules;
+      // Hide all others
+      $('.collapse-row').hide();
+
+      if ($cardBody.data('loaded')) {
+        $collapseRow.show();
+        return;
+      }
+
+      $collapseRow.show();
+      $cardBody.html('<div>Loading data...</div>');
+
+      $.ajax({
+        url: '/schedule/' + itemCode,
+        method: 'GET',
+        dataType: 'json',
+        success: function (data) {
+          var sqlData = data.schedules;
             var db2Datas = data.db2_data;
             var stockDatas = data.stock_data;
             var forecast = data.forecast;
@@ -99,10 +98,8 @@
             var today = normalizeDate(new Date());
             var yesterday = new Date(today);
             yesterday.setDate(today.getDate() - 1);
-          
-            // var html = '<div style="overflow-x:auto;"><table class="table table-bordered table-sm">';
-            var html = '<div class="scrollable-table"><table class="table table-bordered table-sm">';
-            html += '<thead><tr><th>Mesin</th><th></th>';
+          var html = '<div style="overflow-x:auto;"><table class="table table-bordered table-sm">';
+          html += '<thead><tr><th>Mesin</th><th></th>';
             dates.forEach(function(date) {
               var options = { day: 'numeric', month: 'short', year: 'numeric' };
               var dateStr = date.toLocaleDateString('id-ID', options);
@@ -261,44 +258,18 @@
               html += '<td class="balance-cell" data-date="' + key + '"><strong>' + lastBalance.toFixed(2) + '</strong></td>';
             });
             html += '</tr>';
-          
-            html += '</tbody></table></div>';
-            $cardBody.html(html);
-            $cardBody.data('loaded', true);
-          
-            $cardBody.on('input', '.forecast-input', function () {
-              var forecastMap = {};
-              $('.forecast-input').each(function () {
-                var date = $(this).data('date');
-                var val = parseFloat($(this).val() || 0);
-                forecastMap[date] = val;
-              });
-            
-              dates.forEach(function (d) {
-                var key = d.toISOString().split("T")[0];
-                if (d.getDay() === 0) return;
-              
-                var projectQty = projectQtyMap[key] || 0;
-                var poQty = poDeliveryMap[key] || 0;
-                var forecastQty = forecastMap[key] || 0;
-                var balance = projectQty - poQty - forecastQty;
-              
-                var $cell = $cardBody.find('.balance-cell[data-date="' + key + '"]');
-                if (projectQty || poQty || forecastQty) {
-                  $cell.html('<strong>' + balance + '</strong>');
-                } else {
-                  $cell.html('');
-                }
-              });
-            });
-          },
-          error: function() {
-            $cardBody.html('<div class="text-danger">Error loading data.</div>');
-          }
-        });
+          html += '</table></div>';
+          $cardBody.html(html);
+          $cardBody.data('loaded', true);
+        },
+        error: function () {
+          $cardBody.html('<div class="text-danger">Error loading data.</div>');
+        }
       });
     });
-  </script>
+  });
+</script>
+
 
   <style>
     table th, table td {
@@ -324,18 +295,6 @@
       margin: auto;
       display: block;
     }
-
-    .scrollable-table {
-      overflow: auto;
-      max-height: 400px; /* Atur sesuai kebutuhan */
-      border: 1px solid #dee2e6;
-    }
-
-    .scrollable-table {
-      overflow-x: auto;
-      overflow-y: hidden;
-    }
-
   </style>
 
 @endpush

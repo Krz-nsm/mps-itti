@@ -7,7 +7,7 @@
     <meta name="description" content="">
     <meta name="author" content="">
 
-    <title>Schedule Planning Kniting</title>
+    <title>MPS</title>
 
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" integrity="sha512-..." crossorigin="anonymous" referrerpolicy="no-referrer" />
 
@@ -26,12 +26,12 @@
           <!-- Top Bar -->
           <nav class="navbar bg-body-tertiary" style="background-color: #9A616D;">
             <div class="container-fluid">
-              <a class="navbar-brand text-white fw-bold fs-3" href="/home">
-                <i class="fas fa-industry me-2"></i> Schedule Planning Kniting
+              <a class="navbar-brand text-white fw-bold fs-3" href="{{ route('home') }}">
+                <i class="fas fa-industry me-2"></i> MPS-ITTI
               </a>
 
-              <a class="navbar-brand text-white fw-bold fs-3" href="/schedule">
-                <i class="fas fa-calendar me-2"></i> Planning Schedule
+              <a class="navbar-brand text-white fw-bold fs-3" href="{{ route('view') }}">
+                <i class="fas fa-calendar me-2"></i> Planning Schedule Priview
               </a>
 
               <button type="submit" class="btn btn-outline-light" id="btLogout">
@@ -71,10 +71,10 @@
         title: "Do you want to Logout ?",
         showCancelButton: true,
         icon: "question",
-        confirmButtonText: "Save"
+        confirmButtonText: "Yes"
       }).then((result) => {
         if (result.isConfirmed) {
-           window.location.href = "{{ route('logout') }}";
+          window.location.href = "{{ route('logout') }}";
         } else {
 
         }

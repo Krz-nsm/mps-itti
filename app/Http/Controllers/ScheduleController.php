@@ -203,47 +203,43 @@ class ScheduleController extends Controller
         ));
     }
 
-public function dataFilter(Request $request)
-{
-    $search = $request->input('q'); // Input dari select2 (q adalah default query dari select2)
+    public function dataFilter(Request $request)
+    {
+        $search = $request->input('q');
 
-    $results = DB::connection('DB2')
-        ->table('PRODUCT as p')
-        ->distinct()
-        ->select(
-            DB::raw('a.VALUEDECIMAL'),
-            DB::raw('ROUND(a.VALUEDECIMAL * 24) AS CALCULATION'),
-            DB::raw("TRIM(p.SUBCODE02) || '-' || TRIM(p.SUBCODE03) AS hanger")
-        )
-        ->leftJoin('ADSTORAGE as a', function($join) {
-            $join->on('a.UNIQUEID', '=', 'p.ABSUNIQUEID')
-                ->where('a.FIELDNAME', '=', 'ProductionRate');
-        })
-        ->where('p.ITEMTYPECODE', 'KGF')
-        ->when($search, function ($query, $search) {
-            $query->whereRaw("TRIM(p.SUBCODE02) || '-' || TRIM(p.SUBCODE03) LIKE ?", ["%$search%"])
-                  ->orWhereRaw("TRIM(p.LONGDESCRIPTION) LIKE ?", ["%$search%"]);
-        })
-        ->orderBy('hanger', 'ASC')
-        ->limit(10)
-        ->get();
+        $results = DB::connection('DB2')
+            ->table('PRODUCT as p')
+            ->distinct()
+            ->select(
+                DB::raw('a.VALUEDECIMAL'),
+                DB::raw('ROUND(a.VALUEDECIMAL * 24) AS CALCULATION'),
+                DB::raw("TRIM(p.SUBCODE02) || '-' || TRIM(p.SUBCODE03) AS hanger")
+            )
+            ->leftJoin('ADSTORAGE as a', function($join) {
+                $join->on('a.UNIQUEID', '=', 'p.ABSUNIQUEID')
+                    ->where('a.FIELDNAME', '=', 'ProductionRate');
+            })
+            ->where('p.ITEMTYPECODE', 'KGF')
+            ->when($search, function ($query, $search) {
+                $query->whereRaw("TRIM(p.SUBCODE02) || '-' || TRIM(p.SUBCODE03) LIKE ?", ["%$search%"])
+                      ->orWhereRaw("TRIM(p.LONGDESCRIPTION) LIKE ?", ["%$search%"]);
+            })
+            ->orderBy('hanger', 'ASC')
+            ->limit(10)
+            ->get();
 
-    // Menambahkan opsi kosong di awal hasil pencarian
-    $formatted = $results->map(function ($item) {
-        return [
-            'id' => $item->hanger,
-            'text' => $item->hanger
-        ];
-    });
+        $formatted = $results->map(function ($item) {
+            return [
+                'id' => $item->hanger,
+                'text' => $item->hanger
+            ];
+        });
 
-    $formatted->prepend([
-        'id' => '',
-        'text' => 'Pilih nomor hanger'
-    ]);
+        $formatted->prepend([
+            'id' => '',
+            'text' => 'Pilih nomor hanger'
+        ]);
 
-    return response()->json($formatted);
-}
-
-
-
+        return response()->json($formatted);
+    }
 }
