@@ -7,6 +7,23 @@
   @php
       use Carbon\Carbon;
   @endphp
+    <style>
+      .calculation-table td {
+        padding: 4px 8px; /* Lebih rapat */
+        vertical-align: top;
+      }
+
+      .calculation-table .table-active {
+        background-color: #f0f0f0;
+        font-weight: bold;
+      }
+
+      .calculation-title {
+        font-weight: bold;
+        color: #007bff;
+        margin-bottom: 10px;
+      }
+    </style>
     <!-- Begin Page Content -->
     <div class="container-fluid">
       <!-- Page Heading -->
@@ -66,26 +83,48 @@
         <div class="col-4 mb-4">
           <div class="card border-left-primary shadow h-100 py-2">
             <div class="card-body">
-              <div class="row no-gutters align-items-center">
-                <div class="col mr-2">
-                  <h4 class="mb-2 font-weight-bold text-primary">Calculation</h4>
-                  <div class="row">
-                    <div class="col-xl-12 col-md-12 mb-3">
-                      <p>No Item : <span id="calc_no_item">-</span></p>
-                      <p>Start Date : <span id="start_date">-</span></p>
-                      <p>Delivery Date : <span id="calc_date">-</span></p>
-                      <p>Qty / KG : <span id="qty">-</span></p>
-                      <p>Kapasitas Produksi Mesin</p>
-                      <p>Per Jam : <span id="calc_qtyh">-</span></p>
-                      <p>Per Hari : <span id="calc_qty">-</span></p>
-                      <p>Jumlah Hari Kerja : <span id="calc_days">-</span></p>
-                      <p>Machine Required : <span id="calc_machine">-</span></p>
-                    </div>
-                    <div class="col-xl-12 col-md-12 mb-3 ">
-                      <button type="button" class="btn btn-primary " id="btSubmit">Submit</button>
-                    </div>
-                  </div>
-                </div>
+              <div class="calculation-title">Calculation</div>
+                <table class="table table-borderless calculation-table mb-3">
+                <tbody>
+                  <tr>
+                    <td><strong>Kode Item:</strong></td>
+                    <td><span id="calc_no_item">-</span></td>
+                  </tr>
+                  <tr>
+                    <td><strong>Tanggal Mulai Produksi:</strong></td>
+                    <td><span id="start_date">-</span></td>
+                  </tr>
+                  <tr>
+                    <td><strong>Tanggal Pengiriman:</strong></td>
+                    <td><span id="calc_date">-</span></td>
+                  </tr>
+                  <tr>
+                    <td><strong>Total Qty:</strong></td>
+                    <td><span id="qty">-</span></td>
+                  </tr>
+                  <tr class="table-active">
+                    <td colspan="2"><strong>Kapasitas Produksi Mesin:</strong></td>
+                  </tr>
+                  <tr>
+                    <td>* Per Jam (per mesin):</td>
+                    <td><span id="calc_qtyh">-</span></td>
+                  </tr>
+                  <tr>
+                    <td>* Per Hari (per mesin):</td>
+                    <td><span id="calc_qty">-</span></td>
+                  </tr>
+                  <tr>
+                    <td><strong>Jumlah Hari Kerja:</strong></td>
+                    <td><span id="calc_days">-</span></td>
+                  </tr>
+                  <tr>
+                    <td><strong>Jumlah Mesin yang Dibutuhkan:</strong></td>
+                    <td><span id="calc_machine">-</span></td>
+                  </tr>
+                </tbody>
+              </table>
+              <div class="d-grid">
+                <button type="button" class="btn btn-primary" id="btSubmit">Submit</button>
               </div>
             </div>
           </div>
@@ -101,57 +140,61 @@
             <!-- Card Body -->
             <div class="card-body">
               <div class="row" id="available-machines">
-                @foreach ($groupedMesin as $jenis => $listMesin)
-                  <div class="col-12 mb-2">
-                    <div class="card border-left-info shadow">
-                      <div class="card-header bg-info text-white" style="cursor: pointer;"
-                           data-bs-toggle="collapse" 
-                           data-bs-target="#collapseJenis{{ Str::slug($jenis) }}" 
-                           aria-expanded="true" 
-                           aria-controls="collapseJenis{{ Str::slug($jenis) }}">
-                        <strong>Jenis Mesin: {{ $jenis }}</strong>
-                      </div>
-                      <div id="collapseJenis{{ Str::slug($jenis) }}" class="collapse hide">
-                        <div class="card-body">
-                          <div class="row">
-                            @foreach ($listMesin as $machine)
-                              @php
-                                $isAvailable = is_null($machine->end_date) || Carbon::now()->gt(Carbon::parse($machine->end_date));
-                              @endphp
-                              <div class="col-xl-3 col-md-6 mb-4" onclick="moveToSelected(this)" data-id="{{ $machine->id }}" data-code="{{ $machine->mesin_code }}" data-item="{{ $machine->item_code }}" data-start="{{ $machine->start_date }}" data-end="{{ $machine->end_date }}" data-jenis="{{ Str::slug($jenis) }}">
-                                <div class="card border-left-primary shadow h-100 py-2">
-                                  <div class="card-body">
-                                    <div class="row no-gutters align-items-center">
-                                      <div class="col mr-2">
-                                        <!-- Kode Mesin -->
-                                        <div class="h6 font-weight-bold text-primary text-uppercase mb-1 fs-6">
-                                          {{ $machine->mesin_code }}
+                  @foreach ($groupedMesin as $jenis => $listMesin)
+                    <div class="col-12 mb-1">
+                      <div class="card border-left-info shadow">
+                        <div class="card-header bg-info text-white" style="cursor: pointer;"
+                            data-bs-toggle="collapse" 
+                            data-bs-target="#collapseJenis{{ Str::slug($jenis) }}" 
+                            aria-expanded="true" 
+                            aria-controls="collapseJenis{{ Str::slug($jenis) }}">
+                          <strong>Jenis Mesin: {{ $jenis }}</strong>
+                        </div>
+                        <div id="collapseJenis{{ Str::slug($jenis) }}" class="collapse hide">
+                          <div class="d-flex flex-wrap gap-3 justify-content-start" style="max-height: 600px; overflow-y: auto;">
+                            <div class="card-body">
+                              <div class="row">
+                                @foreach ($listMesin as $machine)
+                                  @php
+                                    $isAvailable = is_null($machine->end_date) || Carbon::now()->gt(Carbon::parse($machine->end_date));
+                                  @endphp
+                                  <div class="col-xl-3 col-md-6 mb-2" onclick="moveToSelected(this)" data-id="{{ $machine->id }}" data-code="{{ $machine->mesin_code }}" data-item="{{ $machine->item_code }}" data-start="{{ $machine->start_date }}" data-end="{{ $machine->end_date }}" data-jenis="{{ Str::slug($jenis) }}">
+                                    <div class="card border-left-primary shadow-sm h-100 py-1" style="margin-bottom: 8px;">
+                                      <div class="card-body px-2 py-2" style="line-height: 1.2;">
+                                        <div class="row no-gutters align-items-center">
+                                          <div class="col mr-2">
+                                            <!-- Kode Mesin -->
+                                            <div class="text-primary fw-bold text-uppercase" style="font-size: 0.85rem; margin-bottom: 2px;">
+                                              {{ $machine->mesin_code }}
+                                            </div>
+                                                            
+                                            <!-- Status -->
+                                            <div class="{{ $isAvailable ? 'text-success' : 'text-danger' }}" style="font-size: 0.85rem; margin-bottom: 2px;">
+                                              {{ $isAvailable ? 'Available' : 'Unavailable' }}
+                                            </div>
+                                                            
+                                            <!-- Keterangan -->
+                                            @if (!$isAvailable)
+                                              <div class="text-muted" style="font-size: 0.75rem; margin-bottom: 1px;">
+                                                {{ $machine->item_code }}
+                                              </div>
+                                              <div class="text-muted" style="font-size: 0.75rem;">
+                                                Until {{ \Carbon\Carbon::parse($machine->end_date)->format('Y-m-d') }}
+                                              </div>
+                                            @endif
+                                          </div>
                                         </div>
-                                                        
-                                        <!-- Status -->
-                                        <div class="h5 mb-0 font-weight-bold {{ $isAvailable ? 'text-success' : 'text-danger' }}">
-                                          {{ $isAvailable ? 'Available' : 'Unavailable' }}
-                                        </div>
-                                                        
-                                        <!-- Keterangan -->
-                                        @if (!$isAvailable)
-                                          <h6 class="card-subtitle mb-2 text-body-secondary fs-6">{{ $machine->item_code }}</h6>
-                                          <h6 class="mb-2 fs-6">
-                                            Until {{ \Carbon\Carbon::parse($machine->end_date)->format('Y-m-d') }}
-                                          </h6>
-                                        @endif
                                       </div>
                                     </div>
                                   </div>
-                                </div>
+                                @endforeach
                               </div>
-                            @endforeach
+                            </div>
                           </div>
                         </div>
                       </div>
                     </div>
-                  </div>
-                @endforeach
+                  @endforeach
               </div>
             </div>
           </div>
@@ -355,12 +398,15 @@
         }
         const clonedCard = card.cloneNode(true);
         clonedCard.onclick = null;
+        clonedCard.style.position = 'relative';
+
         const closeBtn = document.createElement('button');
         closeBtn.textContent = '×';
         closeBtn.className = 'btn btn-sm btn-danger';
         closeBtn.style.position = 'absolute';
-        closeBtn.style.top = '5px';
-        closeBtn.style.right = '5px';
+        closeBtn.style.top = '2px';
+        closeBtn.style.right = '2px';
+        closeBtn.style.zIndex = '10';
         closeBtn.onclick = function() {
           cancelSelected(clonedCard, machineId, card);
         };
@@ -432,37 +478,37 @@
       }
 
       function resetSelectedMachines() {
-  const selectedContainer = document.getElementById("selected-machines");
-  const selectedCards = selectedContainer.querySelectorAll(".col-xl-3");
+        const selectedContainer = document.getElementById("selected-machines");
+        const selectedCards = selectedContainer.querySelectorAll(".col-xl-3");
 
-  selectedCards.forEach(card => {
-    const closeBtn = card.querySelector('button');
-    if (closeBtn) closeBtn.remove();
+        selectedCards.forEach(card => {
+          const closeBtn = card.querySelector('button');
+          if (closeBtn) closeBtn.remove();
 
-    card.style.position = '';
+          card.style.position = '';
 
-    const jenis = card.dataset.jenis;
-    const containerId = 'collapseJenis' + jenis;
-    const container = document.getElementById(containerId)?.querySelector('.row');
+          const jenis = card.dataset.jenis;
+          const containerId = 'collapseJenis' + jenis;
+          const container = document.getElementById(containerId)?.querySelector('.row');
 
-    // 👇 Bind ulang onclick sebelum dikembalikan
-    card.onclick = function () {
-      moveToSelected(this);
-    };
+          // 👇 Bind ulang onclick sebelum dikembalikan
+          card.onclick = function () {
+            moveToSelected(this);
+          };
 
-    if (container) {
-      container.appendChild(card);
-    } else {
-      console.warn('Jenis mesin tidak ditemukan untuk:', jenis);
-      document.getElementById("available-machines").appendChild(card);
-    }
-  });
+          if (container) {
+            container.appendChild(card);
+          } else {
+            console.warn('Jenis mesin tidak ditemukan untuk:', jenis);
+            document.getElementById("available-machines").appendChild(card);
+          }
+        });
 
-  selectedMachines = [];
-  usedMesin = 0;
-  document.getElementById('calc_machine').textContent = '-';
-  refreshMachineAvailability();
-}
+        selectedMachines = [];
+        usedMesin = 0;
+        document.getElementById('calc_machine').textContent = '-';
+        refreshMachineAvailability();
+      }
 
     </script>
 
