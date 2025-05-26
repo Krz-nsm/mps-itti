@@ -7,14 +7,16 @@
     <meta name="description" content="">
     <meta name="author" content="">
 
-    <title>Schedule Planning Kniting</title>
+    <title>MPS</title>
 
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" integrity="sha512-..." crossorigin="anonymous" referrerpolicy="no-referrer" />
 
     <link
       href="https://fonts.googleapis.com/css?family=Nunito:200,200i,300,300i,400,400i,600,600i,700,700i,800,800i,900,900i"
       rel="stylesheet">
+      <!-- FullCalendar JS -->
     <link href="{{ asset('css/sb-admin-2.css') }}" rel="stylesheet">
+    @stack('styles')
   </head>
 
   <body id="page-top">
@@ -24,8 +26,12 @@
           <!-- Top Bar -->
           <nav class="navbar bg-body-tertiary" style="background-color: #9A616D;">
             <div class="container-fluid">
-              <a class="navbar-brand text-white fw-bold fs-3" href="#">
-                <i class="fas fa-industry me-2"></i> Schedule Planning Kniting
+              <a class="navbar-brand text-white fw-bold fs-3" href="{{ route('home') }}">
+                <i class="fas fa-industry me-2"></i> MPS-ITTI
+              </a>
+
+              <a class="navbar-brand text-white fw-bold fs-3" href="{{ route('view') }}">
+                <i class="fas fa-calendar me-2"></i> Planning Schedule Priview
               </a>
 
               <button type="submit" class="btn btn-outline-light" id="btLogout">
@@ -56,20 +62,21 @@
   <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-easing/1.4.1/jquery.easing.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
   <script src="{{ asset('js/sb-admin-2.min.js') }}"></script>
-  
+  @stack('scripts')
   <script>
     $('#btLogout').on('click', function () {
       Swal.fire({
         title: "Do you want to Logout ?",
         showCancelButton: true,
         icon: "question",
-        confirmButtonText: "Save"
+        confirmButtonText: "Yes"
       }).then((result) => {
         if (result.isConfirmed) {
-           window.location.href = "{{ route('logout') }}";
+          window.location.href = "{{ route('logout') }}";
         } else {
-          
+
         }
       });
     });
