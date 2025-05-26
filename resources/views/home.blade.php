@@ -26,6 +26,12 @@
                     <div class="col-xl-4 col-md-6 mb-3">
                       <label for="txCode" class="form-label">No. Item</label>
                       <input type="text" class="form-control" id="txCode">
+                      <select class="form-control select2" id="select2Code" name="no_item">
+                        <option value="">Pilih No. Item</option>
+                        @foreach ($filter as $item)
+                          <option value="{{ $item->hanger }}">{{ $item->hanger }} | {{ $item->longdescription }}</option>
+                        @endforeach
+                      </select>
                     </div>
                     <div class="col-xl-4 col-md-6 mb-3">
                       <label for="txQty" class="form-label">Qty</label>
@@ -326,6 +332,60 @@
 
     });
   });
+</script>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const selectItem = document.getElementById('select2Code');
+        const inputQty = document.getElementById('txQty');
+        const inputDate1 = document.getElementById('tsDate');
+        const inputDate2 = document.getElementById('txDate');
+
+        // Target span elements for output
+        const spanNoItem = document.getElementById('calc_no_item');
+        const spanMcQty = document.getElementById('mc_qty');
+        const spanQty = document.getElementById('calc_qty');
+        const spanDate = document.getElementById('calc_date');
+        const spanDays = document.getElementById('calc_days');
+        const spanMachine = document.getElementById('calc_machine');
+
+        function sendCalculationRequest() {
+            const noItem = selectItem.value;
+            const qty = inputQty.value;
+            const date1 = inputDate1.value;
+            const date2 = inputDate2.value;
+
+            if (!noItem || !qty || !date1 || !date2) {
+                return;
+            }
+
+            const url = new URL("http://127.0.0.1:8000/calculation");
+            url.searchParams.append("no_item", noItem);
+            url.searchParams.append("txQty", qty);
+            url.searchParams.append("date1", date1);
+            url.searchParams.append("date2", date2);
+
+            fetch(url)
+                .then(response => response.json())
+                .then(data => {
+                    spanNoItem.textContent = data.no_item || '-';
+                    spanMcQty.textContent = data.jumlah_1mesin || '-';
+                    spanQty.textContent = data.calculation || '-';
+                    spanDate.textContent = data.delivery_date || '-';
+                    spanDays.textContent = data.workdays_until_delivery || '-';
+                    spanMachine.textContent = data.kebutuhan_mesin || '-';
+                })
+                .catch(error => {
+                    console.error("Gagal fetch:", error);
+                });
+        }
+
+        // Event listeners
+        selectItem.addEventListener('change', sendCalculationRequest);
+        inputQty.addEventListener('input', sendCalculationRequest);
+        inputDate1.addEventListener('change', sendCalculationRequest);
+        inputDate2.addEventListener('change', sendCalculationRequest);
+    });
 </script>
 
 <style>

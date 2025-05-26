@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "6cadd819a6415b190ae2704ced6e6c8b",
+    "content-hash": "98cbeda408949407ea989fa45854ae67",
     "packages": [
         {
             "name": "asm89/stack-cors",
@@ -185,6 +185,61 @@
                 }
             ],
             "time": "2023-12-11T17:09:12+00:00"
+        },
+        {
+            "name": "cooperl/laravel-db2",
+            "version": "9.0.1",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/cooperl22/laravel-db2.git",
+                "reference": "b3c869b67f8c09cdc8d976fbb14274dede0f6484"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/cooperl22/laravel-db2/zipball/b3c869b67f8c09cdc8d976fbb14274dede0f6484",
+                "reference": "b3c869b67f8c09cdc8d976fbb14274dede0f6484",
+                "shasum": ""
+            },
+            "require": {
+                "illuminate/database": "^8.0",
+                "php": "^7.3|^8.0"
+            },
+            "type": "library",
+            "extra": {
+                "laravel": {
+                    "providers": [
+                        "Cooperl\\DB2\\DB2ServiceProvider"
+                    ]
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "Cooperl\\DB2\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Maxime Rault",
+                    "role": "Developer"
+                }
+            ],
+            "description": "laravel-db2 is a simple DB2 service provider for Laravel. It provides DB2 Connection by extending the Illuminate Database component of the laravel framework.",
+            "keywords": [
+                "database",
+                "db2",
+                "laravel",
+                "odbc",
+                "pdo"
+            ],
+            "support": {
+                "issues": "https://github.com/cooperl22/laravel-db2/issues",
+                "source": "https://github.com/cooperl22/laravel-db2/tree/9.0.1"
+            },
+            "time": "2022-03-09T12:15:05+00:00"
         },
         {
             "name": "dflydev/dot-access-data",
