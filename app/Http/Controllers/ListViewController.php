@@ -8,12 +8,64 @@ use Illuminate\Support\Facades\DB;
 class ListViewController extends Controller
 {
     public function index(){
+        return view('test');
+    }
 
-        $itemCode = DB::connection('sqlsrv')->select('EXEC sp_get_unique_item_codes');
+    public function loadData(){
+         $dataDB2 = DB::connection('DB2')->select("
+            SELECT
+            	p.SUBCODE02,
+            	p.SUBCODE03,
+            	a2.VALUEDATE AS RMP_REQ_TO,
+            	SUM(p.USERPRIMARYQUANTITY) AS QTY_TOTAL
+            FROM
+            	PRODUCTIONDEMAND p
+            LEFT JOIN ADSTORAGE a ON a.UNIQUEID = p.ABSUNIQUEID AND a.FIELDNAME = 'RMPReqDate'
+            LEFT JOIN ADSTORAGE a2 ON a2.UNIQUEID = p.ABSUNIQUEID AND a2.FIELDNAME = 'RMPGreigeReqDateTo'
+            LEFT JOIN ADSTORAGE a3 ON a3.UNIQUEID = p.ABSUNIQUEID AND a3.FIELDNAME = 'OriginalPDCode'
+            WHERE
+            	p.ITEMTYPEAFICODE = 'KGF'
+            	AND a2.VALUEDATE > '2025-05-26'
+            	AND a3.VALUESTRING IS NULL
+            GROUP BY
+            	p.SUBCODE02,
+            	p.SUBCODE03,
+            	a2.VALUEDATE
+        ");
 
-        return view('listView', [
-        'itemCode' => $itemCode,
+        $dataStock = DB::connection('DB2')->select("
+            SELECT
+            	DECOSUBCODE02,
+            	DECOSUBCODE03,
+            	SUM(BASEPRIMARYQUANTITYUNIT) as Stock
+            FROM
+            	BALANCE b
+            WHERE
+            	b.LOGICALWAREHOUSECODE IN ('M021', 'M502')
+            GROUP BY 
+            	DECOSUBCODE02,
+            	DECOSUBCODE03
+        ");
+
+        $forecast = DB::connection('mysql')->select("
+            SELECT
+            	t.item_subcode2,
+            	t.item_subcode3,
+            	t.buy_month,
+            	SUM(t.qty_kg) AS total_qty_kg
+            FROM tbl_upload_order t
+            GROUP BY
+            	t.item_subcode2,
+            	t.item_subcode3,
+            	t.buy_month
+        ");
+
+        return response()->json([
+            'dataDB2' => $dataDB2,
+            'dataStock' => $dataStock,
+            'forecast' => $forecast,
         ]);
+
     }
 
     public function index2(){

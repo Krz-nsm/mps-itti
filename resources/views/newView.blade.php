@@ -26,29 +26,20 @@
 @endsection
 
 @push('scripts')
-  <link rel="stylesheet" href="https://cdn.datatables.net/1.13.5/css/jquery.dataTables.min.css">
-  <script src="https://cdn.datatables.net/1.13.5/js/jquery.dataTables.min.js"></script>
 
 <script>
   $(document).ready(function () {
-    $('#itemTable').DataTable({
-      paging: false,
-      searching: false,
-      info: false
-    });
 
     $('.item-row').on('click', function () {
       var itemCode = $(this).data('item-code');
       var $collapseRow = $('#collapse-' + itemCode);
       var $cardBody = $collapseRow.find('.card-body');
 
-      // Toggle collapse
       if ($collapseRow.is(':visible')) {
         $collapseRow.hide();
         return;
       }
 
-      // Hide all others
       $('.collapse-row').hide();
 
       if ($cardBody.data('loaded')) {
@@ -65,12 +56,12 @@
         dataType: 'json',
         success: function (data) {
           var sqlData = data.schedules;
-            var db2Datas = data.db2_data;
-            var stockDatas = data.stock_data;
-            var forecast = data.forecast;
-            var initialStock = 0;
+          var db2Datas = data.db2_data;
+          var stockDatas = data.stock_data;
+          var forecast = data.forecast;
+          var initialStock = 0;
 
-            console.log(forecast);
+          console.log(forecast);
 
             if (stockDatas.length > 0) {
               initialStock = parseFloat(stockDatas[0].stock || 0);
@@ -98,8 +89,8 @@
             var today = normalizeDate(new Date());
             var yesterday = new Date(today);
             yesterday.setDate(today.getDate() - 1);
-          var html = '<div style="overflow-x:auto;"><table class="table table-bordered table-sm">';
-          html += '<thead><tr><th>Mesin</th><th></th>';
+            let html = '<div class="table-scroll-wrapper"><table class="table table-bordered table-sm wide-table">';
+            html += '<thead><tr><th style="width: 200px;">Mesin</th><th style="width: 100px;"></th>';
             dates.forEach(function(date) {
               var options = { day: 'numeric', month: 'short', year: 'numeric' };
               var dateStr = date.toLocaleDateString('id-ID', options);
@@ -213,14 +204,11 @@
                 return;
               }
             
-              // Jika ada qty untuk tanggal end_date ini, tampilkan qty-nya
               if (qtyByEndDate[key]) {
                 html += '<td><strong>' + qtyByEndDate[key].toFixed(2) + '</strong></td>';
-                // projectQtyMap[key] = qtyByEndDate[key].toFixed(2);
                 projectQtyMap[key] = qtyByEndDate[key];
               } else {
                 html += '<td></td>';
-                // projectQtyMap[key] = '0';
                 projectQtyMap[key] = 0;
               }
             });
@@ -249,10 +237,6 @@
                   totalQtyDay += parseFloat(row.qty_day || 0);
                 }
               });
-            
-              // if (index !== 0) {
-              //   lastBalance = (lastBalance - poQty - forecastQty - projectQty) + totalQtyDay;
-              // }
               lastBalance = (lastBalance - poQty - forecastQty - projectQty) + totalQtyDay;
             
               html += '<td class="balance-cell" data-date="' + key + '"><strong>' + lastBalance.toFixed(2) + '</strong></td>';
@@ -283,17 +267,16 @@
       font-size: 11px !important;
     }
 
-    .rotate-date {
-      writing-mode: vertical-rl;
-      transform: rotate(180deg);
-      white-space: nowrap;
-      font-size: 12px;
+    .table-scroll-wrapper {
+      overflow-x: auto;
+      max-height: 500px;
+      overflow-y: auto;
     }
 
-    .table-sm input {
-      max-width: 80px;
-      margin: auto;
-      display: block;
+    .wide-table {
+      width: 3000%;
+      min-width: 1500px;
+      table-layout: fixed;
     }
   </style>
 
