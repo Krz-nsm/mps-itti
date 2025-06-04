@@ -213,7 +213,7 @@ class ScheduleController extends Controller
             ->select(
                 DB::raw('a.VALUEDECIMAL'),
                 DB::raw('ROUND(a.VALUEDECIMAL * 24) AS CALCULATION'),
-                DB::raw("TRIM(p.SUBCODE02) || '-' || TRIM(p.SUBCODE03) AS hanger")
+                DB::raw("TRIM(p.SUBCODE02) || '-' || TRIM(p.SUBCODE03) || '-' || TRIM(p.SUBCODE04) AS hanger")
             )
             ->leftJoin('ADSTORAGE as a', function($join) {
                 $join->on('a.UNIQUEID', '=', 'p.ABSUNIQUEID')
@@ -221,7 +221,7 @@ class ScheduleController extends Controller
             })
             ->where('p.ITEMTYPECODE', 'KGF')
             ->when($search, function ($query, $search) {
-                $query->whereRaw("TRIM(p.SUBCODE02) || '-' || TRIM(p.SUBCODE03) LIKE ?", ["%$search%"])
+                $query->whereRaw("TRIM(p.SUBCODE02) || '-' || TRIM(p.SUBCODE03) || '-' || TRIM(p.SUBCODE04) LIKE ?", ["%$search%"])
                       ->orWhereRaw("TRIM(p.LONGDESCRIPTION) LIKE ?", ["%$search%"]);
             })
             ->orderBy('hanger', 'ASC')

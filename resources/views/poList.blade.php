@@ -275,51 +275,52 @@
         }
       
         // --- PO With Greige Delivery Date ---
-        var dataDB2 = response.dataDB2;
-        var greigeDeliveryMap = {};
-      
-        dataDB2.forEach(function (row) {
-          let to = normalizeDate(new Date(row.rmp_req_to));
-          let dateKey = to.toISOString().split("T")[0];
-          let subcode = (row.subcode02 || '') + '-' + (row.subcode03 || '');
-          let dailyQty = parseFloat(row.qty_total || 0);
+          var dataDB2 = response.dataDB2;
+          var greigeDeliveryMap = {};
         
-          if (!greigeDeliveryMap[dateKey]) {
-            greigeDeliveryMap[dateKey] = {};
-          }
-        
-          greigeDeliveryMap[dateKey][subcode] = (greigeDeliveryMap[dateKey][subcode] || 0) + dailyQty;
-        });
-      
-        let htmlPo = '<tr style="border-top: 3px solid black;"><td><strong>PO With Greige Delivery Date</strong></td>';
-        dates.forEach(function (d) {
-          let currentDate = normalizeDate(d);
-          let key = currentDate.toISOString().split("T")[0];
-        
-          if (currentDate.getDay() === 0) {
-            htmlPo += '<td style="background-color:#f8d7da;"></td>';
-          } else {
-            let combos = greigeDeliveryMap[key];
-            if (combos) {
-              let cellContent = '';
-              for (const [subcode, qty] of Object.entries(combos)) {
-                cellContent += `
-                  <div class="cell-item" data-subcode="${subcode}" data-qty="${qty.toFixed(2)}" data-date="${key}" style="cursor:pointer;">
-                    <strong>${subcode}</strong><br>
-                    <small>${qty.toFixed(2)}</small>
-                  </div>
-                  <hr style="margin: 4px 0;">
-                `;
-              }
-              htmlPo += `<td>${cellContent}</td>`;
-            } else {
-              htmlPo += '<td></td>';
+          dataDB2.forEach(function (row) {
+            let to = normalizeDate(new Date(row.rmp_req_to));
+            let dateKey = to.toISOString().split("T")[0];
+            let subcode = (row.subcode02 || '') + '-' + (row.subcode03 || '') + '-' + (row.subcode04 || '');
+            let dailyQty = parseFloat(row.qty_total || 0);
+          
+            if (!greigeDeliveryMap[dateKey]) {
+              greigeDeliveryMap[dateKey] = {};
             }
-          }
-        });
-        htmlPo += '</tr>';
-        $('#itemTablePo tbody').empty().append(htmlPo);
-      
+          
+            greigeDeliveryMap[dateKey][subcode] = (greigeDeliveryMap[dateKey][subcode] || 0) + dailyQty;
+          });
+        
+          let htmlPo = '<tr style="border-top: 3px solid black;"><td><strong>PO With Greige Delivery Date</strong></td>';
+          dates.forEach(function (d) {
+            let currentDate = normalizeDate(d);
+            let key = currentDate.toISOString().split("T")[0];
+          
+            if (currentDate.getDay() === 0) {
+              htmlPo += '<td style="background-color:#f8d7da;"></td>';
+            } else {
+              let combos = greigeDeliveryMap[key];
+              if (combos) {
+                let cellContent = '';
+                for (const [subcode, qty] of Object.entries(combos)) {
+                  cellContent += `
+                    <div class="cell-item" data-subcode="${subcode}" data-qty="${qty.toFixed(2)}" data-date="${key}" style="cursor:pointer;">
+                      <strong>${subcode}</strong><br>
+                      <small>${qty.toFixed(2)}</small>
+                    </div>
+                    <hr style="margin: 4px 0;">
+                  `;
+                }
+                htmlPo += `<td>${cellContent}</td>`;
+              } else {
+                htmlPo += '<td></td>';
+              }
+            }
+          });
+          htmlPo += '</tr>';
+          $('#itemTablePo tbody').empty().append(htmlPo);
+        // --- PO With Greige Delivery Date ---
+
         // --- Forecast ---
         var forecast = response.forecast;
         var currentYear = new Date().getFullYear();
@@ -337,7 +338,7 @@
           }
         
           var key = normalizeDate(firstDay).toISOString().split("T")[0];
-          let subcode = (f.item_subcode2 || '') + '-' + (f.item_subcode3 || '');
+          let subcode = (f.item_subcode2 || '') + '-' + (f.item_subcode3 || '') + '-' + (f.item_subcode4 || '');
         
           if (!forecastMap[key]) {
             forecastMap[key] = {};

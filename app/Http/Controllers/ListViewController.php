@@ -48,8 +48,9 @@ class ListViewController extends Controller
 
         $dataDB2 = DB::connection('DB2')->select("
             SELECT
-                REPLACE(p.SUBCODE02, ' ', '') AS SUBCODE02,
-                p.SUBCODE03,
+                TRIM(p.SUBCODE02) AS SUBCODE02,
+                TRIM(p.SUBCODE03) AS SUBCODE03,
+                TRIM(p.SUBCODE04) AS SUBCODE04,
                 a2.VALUEDATE AS RMP_REQ_TO,
                 SUM(p.USERPRIMARYQUANTITY) AS QTY_TOTAL
             FROM
@@ -64,6 +65,7 @@ class ListViewController extends Controller
             GROUP BY
                 p.SUBCODE02,
                 p.SUBCODE03,
+                p.SUBCODE04,
                 a2.VALUEDATE
         ");
 
@@ -71,6 +73,7 @@ class ListViewController extends Controller
             SELECT
                 DECOSUBCODE02,
                 DECOSUBCODE03,
+                DECOSUBCODE04,
                 SUM(BASEPRIMARYQUANTITYUNIT) as Stock
             FROM
                 BALANCE b
@@ -78,19 +81,22 @@ class ListViewController extends Controller
                 b.LOGICALWAREHOUSECODE IN ('M021', 'M502')
             GROUP BY 
                 DECOSUBCODE02,
-                DECOSUBCODE03
+                DECOSUBCODE03,
+                DECOSUBCODE04
         ");
 
         $forecast = DB::connection('mysql')->select("
             SELECT
                 t.item_subcode2,
                 t.item_subcode3,
+                t.item_subcode4,
                 t.buy_month,
                 SUM(t.qty_kg) AS total_qty_kg
             FROM tbl_upload_order t
             GROUP BY
                 t.item_subcode2,
                 t.item_subcode3,
+                t.item_subcode4,
                 t.buy_month
         ");
 
@@ -103,7 +109,7 @@ class ListViewController extends Controller
         }
 
         $dataDB2Filtered = array_filter($dataDB2, function($db2) use ($itemCodesMesin) {
-            $key = strtoupper(trim($db2->subcode02)) . '-' . strtoupper(trim($db2->subcode03));
+            $key = strtoupper(trim($db2->subcode02)) . '-' . strtoupper(trim($db2->subcode03)) . '-' . strtoupper(trim($db2->subcode04));
             return !in_array($key, $itemCodesMesin);
         });
 
@@ -127,7 +133,7 @@ class ListViewController extends Controller
     }
 
     public function getScheduleByItemCode($item_code){
-        list($Code1, $Code2) = explode('-', $item_code);
+        list($Code1, $Code2, $Code3) = explode('-', $item_code);
 
         $schedules = DB::connection('sqlsrv')->select('EXEC sp_get_schedule_by_item_code ?', [$item_code]);
 
@@ -143,12 +149,13 @@ class ListViewController extends Controller
             WHERE
                 p.SUBCODE02 = ?
                 AND p.SUBCODE03 = ?
+                AND p.SUBCODE04 = ?
                 AND p.ITEMTYPEAFICODE = 'KGF'
                 AND a2.VALUEDATE > CAST(CURRENT DATE AS DATE)
             	AND a3.VALUESTRING IS NULL
             GROUP BY
             	a2.VALUEDATE
-        ", [$Code1, $Code2]);
+        ", [$Code1, $Code2, $Code3]);
 
         $dataStock = DB::connection('DB2')->select("
             SELECT
@@ -158,24 +165,28 @@ class ListViewController extends Controller
             WHERE
             	DECOSUBCODE02 = ?
             	AND b.DECOSUBCODE03 = ?
+            	AND b.DECOSUBCODE04 = ?
             	AND b.LOGICALWAREHOUSECODE IN ('M021', 'M502')",
-        [$Code1, $Code2]);
+        [$Code1, $Code2, $Code3]);
 
         $forecast = DB::connection('mysql')->select("
             SELECT
               t.item_subcode2,
               t.item_subcode3,
+              t.item_subcode4,
               t.buy_month,
               SUM(t.qty_kg) AS total_qty_kg
             FROM tbl_upload_order t
             WHERE 
               t.item_subcode2 = ? AND
-              t.item_subcode3 = ?
+              t.item_subcode3 = ? AND
+              t.item_subcode4 = ?
             GROUP BY
               t.item_subcode2,
               t.item_subcode3,
+              t.item_subcode4,
               t.buy_month
-        ",[$Code1, $Code2]);
+        ",[$Code1, $Code2, $Code3]);
 
         return response()->json([
             'schedules' => $schedules,
@@ -187,7 +198,7 @@ class ListViewController extends Controller
 
     
     public function searchForecast($item_code){
-        list($Code1, $Code2) = explode('-', $item_code);
+        list($Code1, $Code2, $Code3) = explode('-', $item_code);
 
         $dataDB2 = DB::connection('DB2')->select("
             SELECT
@@ -201,11 +212,12 @@ class ListViewController extends Controller
             WHERE
                 p.SUBCODE02 = ? AND
                 p.SUBCODE03 = ? AND
+                p.SUBCODE04 = ? AND
                 p.ITEMTYPEAFICODE = 'KGF' AND
                 a2.VALUEDATE > CAST(CURRENT DATE AS DATE) AND
                 a3.VALUESTRING IS NULL
             GROUP BY a2.VALUEDATE
-        ", [$Code1, $Code2]);
+        ", [$Code1, $Code2, $Code3]);
 
         $dataStock = DB::connection('DB2')->select("
             SELECT
@@ -214,24 +226,28 @@ class ListViewController extends Controller
             WHERE
                 DECOSUBCODE02 = ? AND
                 b.DECOSUBCODE03 = ? AND
+                b.DECOSUBCODE04 = ? AND
                 b.LOGICALWAREHOUSECODE IN ('M021', 'M502')",
-        [$Code1, $Code2]);
+        [$Code1, $Code2, $Code3]);
 
         $forecast = DB::connection('mysql')->select("
             SELECT
                 t.item_subcode2,
                 t.item_subcode3,
+                t.item_subcode4,
                 t.buy_month,
                 SUM(t.qty_kg) AS total_qty_kg
             FROM tbl_upload_order t
             WHERE 
                 t.item_subcode2 = ? AND
-                t.item_subcode3 = ?
+                t.item_subcode3 = ? AND
+                t.item_subcode4 = ?
             GROUP BY
                 t.item_subcode2,
                 t.item_subcode3,
+                t.item_subcode4,
                 t.buy_month
-        ", [$Code1, $Code2]);
+        ", [$Code1, $Code2, $Code3]);
 
         return response()->json([
             'db2_data' => $dataDB2,
@@ -244,7 +260,7 @@ class ListViewController extends Controller
         $itemCode = $request->input('item_code');
         $stock = $request->input('stock');
 
-        list($Code1, $Code2) = explode('-', $itemCode);
+        list($Code1, $Code2, $Code3) = explode('-', $itemCode);
 
         $dataStock = DB::connection('DB2')->select("
             SELECT
@@ -261,6 +277,7 @@ class ListViewController extends Controller
             WHERE
             	b.DECOSUBCODE02 = ?
             	AND b.DECOSUBCODE03 = ?
+                AND b.DECOSUBCODE04 = ?
             	AND b.LOGICALWAREHOUSECODE IN ('M021', 'M502')
             GROUP BY
             	b.LOTCODE,
@@ -268,7 +285,7 @@ class ListViewController extends Controller
             	s.STATISTICALGROUPCODE,
             	p.EXTERNALREFERENCE,
             	b.LOGICALWAREHOUSECODE",
-        [$Code1, $Code2]);
+        [$Code1, $Code2, $Code3]);
 
         return response()->json($dataStock);
     }

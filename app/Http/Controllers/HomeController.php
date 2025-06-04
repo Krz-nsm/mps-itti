@@ -27,7 +27,7 @@ class HomeController extends Controller
             ->select(
                 DB::raw('a.VALUEDECIMAL'),
                 DB::raw('ROUND(a.VALUEDECIMAL * 24) AS CALCULATION'),
-                DB::raw('TRIM(p.SUBCODE02) || \'-\' ||TRIM(p.SUBCODE03) AS HANGER'),
+                DB::raw('TRIM(p.SUBCODE02) || \'-\' ||TRIM(p.SUBCODE03) || \'-\' || TRIM(p.SUBCODE04) AS HANGER'),
                 DB::raw('TRIM(p.LONGDESCRIPTION) AS LONGDESCRIPTION')
             )
             ->leftJoin('ADSTORAGE as a', function($join) {
@@ -51,7 +51,7 @@ class HomeController extends Controller
         $qty = (int) $request->txQty;
         $no_item = $request->no_item;
         $today = Carbon::parse($request->date1);
-        [$subcode02, $subcode03] = explode('-', $request->no_item);
+        [$subcode02, $subcode03, $subcode04] = explode('-', $request->no_item);
 
         $results = DB::connection('DB2')->select("
             SELECT DISTINCT 
@@ -63,7 +63,8 @@ class HomeController extends Controller
             WHERE p.ITEMTYPECODE = 'KGF'
               AND p.SUBCODE02 = ?
               AND p.SUBCODE03 = ?
-        ", [$subcode02, $subcode03]);
+              AND p.SUBCODE04 = ?
+        ", [$subcode02, $subcode03, $subcode04]);
 
         $holidays = [
 
