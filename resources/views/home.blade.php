@@ -519,6 +519,7 @@
         const startDate = document.getElementById('tsDate').value;
         const endDate = document.getElementById('txDate').value;
         const qtyPerDay = document.getElementById('calc_qty').textContent;
+        const type = "Sche Plann";
 
         // const dayNeed = document.getElementById('mc_qty').textContent;
         const dayPlann = document.getElementById('calc_qty').textContent;
@@ -545,7 +546,8 @@
             qty_day: parseInt(qtyPerDay),
             start_date: startDate,
             delivery_date: endDate,
-            machines: machines
+            machines: machines,
+            type: type
           })
         })
         .then(response => {

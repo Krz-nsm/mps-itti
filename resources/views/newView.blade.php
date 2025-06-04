@@ -2,6 +2,21 @@
 @section('title', 'Schedule')
 
 @section('content')
+  <ul class="nav nav-tabs mb-3">
+    <li class="nav-item">
+      <a class="nav-link" href="{{ route('poList') }}">PO With Greige Delivery Date</a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link" href="{{ route('scheList') }}">Schedule List Machine</a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link" href="{{ route('forecastList') }}">Detail Product</a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link active" aria-current="page" href="{{ route('view') }}">Shcedule Plann</a>
+    </li>
+  </ul>
+
   <div class="table-responsive">
     <table id="itemTable" class="table table-bordered table-hover">
       <thead>
@@ -23,15 +38,42 @@
       </tbody>
     </table>
   </div>
+
+  <!-- Modal -->
+  <div class="modal fade" id="dataModal" tabindex="-1" aria-labelledby="dataModalLabel" aria-hidden="true">
+    <div class="modal-dialog" style="max-width: 90%;">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="dataModalLabel">Input Schedule</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div class="container-fluid">
+            <div class="row">
+              <div class="col-8 mb-4">
+                <div class="card border-left-primary shadow h-100 py-2">
+                  <div class="card-body">
+                    <h4 class="mb-2 font-weight-bold text-primary">Form Input</h4>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
 @endsection
 
 @push('scripts')
 
 <script>
-  $(document).ready(function () {
+  var initialStock = 0;
+  var itemCode = "NONE"
 
+  $(document).ready(function () {
     $('.item-row').on('click', function () {
-      var itemCode = $(this).data('item-code');
+      itemCode = $(this).data('item-code');
       var $collapseRow = $('#collapse-' + itemCode);
       var $cardBody = $collapseRow.find('.card-body');
 
@@ -59,32 +101,28 @@
           var db2Datas = data.db2_data;
           var stockDatas = data.stock_data;
           var forecast = data.forecast;
-          var initialStock = 0;
+          if (stockDatas.length > 0) {
+            initialStock = parseFloat(stockDatas[0].stock || 0);
+          }
 
-          console.log(forecast);
-
-            if (stockDatas.length > 0) {
-              initialStock = parseFloat(stockDatas[0].stock || 0);
-            }
-
-            if (sqlData.length === 0) {
-              $cardBody.html('<div>No data found for ' + itemCode + '</div>');
-              $cardBody.data('loaded', true);
-              return;
-            }
+          if (sqlData.length === 0) {
+            $cardBody.html('<div>No data found for ' + itemCode + '</div>');
+            $cardBody.data('loaded', true);
+            return;
+          }
           
-            function normalizeDate(date) {
-              return new Date(date.getFullYear(), date.getMonth(), date.getDate());
-            }
+          function normalizeDate(date) {
+            return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+          }
           
-            var startDate = new Date();
-            startDate.setDate(startDate.getDate() - 1);
-            var dates = [];
-            for (var i = 0; i <= 365; i++) {
-              var d = new Date(startDate);
-              d.setDate(startDate.getDate() + i);
-              dates.push(new Date(d));
-            }
+          var startDate = new Date();
+          startDate.setDate(startDate.getDate() - 1);
+          var dates = [];
+          for (var i = 0; i <= 365; i++) {
+            var d = new Date(startDate);
+            d.setDate(startDate.getDate() + i);
+            dates.push(new Date(d));
+          }
 
             var today = normalizeDate(new Date());
             var yesterday = new Date(today);
@@ -105,36 +143,30 @@
             });
             html += '</tr></thead><tbody>';
           
-            var mesinList = [...new Set(sqlData.map(row => row.mesin_code))];
-            mesinList.forEach(function(mesin) {
-              html += '<tr><td>' + mesin + '</td><td></td>';
-              dates.forEach(function(d) {
-                var currentDate = normalizeDate(d);
-                if (currentDate.getDay() === 0) {
-                  html += '<td style="background-color:#f8d7da;"></td>';
-                  return;
-                }
-              
-                var found = false;
-                for (var i = 0; i < sqlData.length; i++) {
-                  var row = sqlData[i];
-                  if (row.mesin_code === mesin) {
-                    var start = normalizeDate(new Date(row.start_date));
-                    var end = normalizeDate(new Date(row.end_date));
-                    if (currentDate >= start && currentDate <= end) {
-                      html += '<td>' + row.qty_day + '</td>';
-                      found = true;
-                      break;
-                    }
-                  }
-                }
-                if (!found) {
-                  html += '<td></td>';
+            html += '<tr><td>Qty Planning</td><td></td>';
+            dates.forEach(function(d) {
+              var currentDate = normalizeDate(d);
+              if (currentDate.getDay() === 0) {
+                html += '<td style="background-color:#f8d7da;"></td>';
+                return;
+              }
+            
+              var totalQty = 0;
+              sqlData.forEach(function(row) {
+                var start = normalizeDate(new Date(row.start_date));
+                var end = normalizeDate(new Date(row.end_date));
+                if (currentDate >= start && currentDate <= end) {
+                  totalQty += parseFloat(row.qty_day) || 0;
                 }
               });
-              html += '</tr>';
+            
+              if (totalQty > 0) {
+                html += '<td>' + totalQty + '</td>';
+              } else {
+                html += '<td></td>';
+              }
             });
-
+            html += '</tr>';
             let greigeDeliveryMap = {};
             db2Datas.forEach(function(row) {
               let to = normalizeDate(new Date(row.rmp_req_to));
@@ -190,7 +222,6 @@
               if (row.end_date && row.qty) {
                 let key = normalizeDate(new Date(row.end_date)).toISOString().split("T")[0];
                 let qtyNum = parseFloat(row.qty);
-                console.log('end_date:', key, 'qty:', qtyNum);
                 qtyByEndDate[key] = parseFloat(row.qty);
               }
             });
@@ -214,7 +245,19 @@
             });
             html += '</tr>';
         
-            html += '<tr><td><strong>Balance</strong></td><td><strong>' + initialStock.toFixed(2) + '</strong></td>';
+            // html += '<tr><td><strong>Balance</strong></td><td><strong>' + initialStock.toFixed(2) + '</strong></td>';
+            // html += '<tr><td><strong>Balance</strong></td><td><a onclick="handleInitialStockClick()"><strong>' + initialStock.toFixed(2) + '</strong></a></td>';
+            html += `<tr><td><strong>Balance</strong></td>
+                    <td>
+                      <strong 
+                        id="initialStockCell" 
+                        data-stock="${initialStock.toFixed(2)}" 
+                        data-item="${itemCode}" 
+                        style="cursor:pointer;">
+                        ${initialStock.toFixed(2)}
+                      </strong>
+                    </td>
+                    `;
             let lastBalance = initialStock;
             dates.forEach(function(d, index) {
               const currentDate = normalizeDate(d);
@@ -252,6 +295,20 @@
       });
     });
   });
+
+  function handleInitialStockClick() {
+    $('#dataModal').modal('show');
+    // alert('Item: ' + itemCode + '\nInitial Stock: ' + initialStock.toFixed(2));
+  }
+
+  $(document).on('click', '#initialStockCell', function () {
+    const stockValue = $(this).data('stock');
+    const itemCode = $(this).data('item');
+
+    // alert('Item Code: ' + itemCode + '\nInitial Stock: ' + stockValue);
+    $('#dataModal').modal('show');
+  });
+
 </script>
 
 

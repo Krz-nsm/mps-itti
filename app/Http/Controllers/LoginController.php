@@ -12,7 +12,7 @@ class LoginController extends Controller
     public function showLoginForm()
     {
         if (Session::has('user')) {
-            return redirect()->route('home');
+            return redirect()->route('poList');
         }
         return view('auth.login');
     }

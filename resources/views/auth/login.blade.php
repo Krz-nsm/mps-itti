@@ -99,7 +99,7 @@
           },
           success: function (response) {
             if (response.success) {
-              window.location.href = '{{ route("home") }}';
+              window.location.href = '{{ route("poList") }}';
             } else {
               Swal.fire({
                 icon: 'warning',

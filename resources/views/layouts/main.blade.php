@@ -20,7 +20,7 @@
   </head>
 
   <body id="page-top">
-    <div id="wrapper" class="d-flex flex-column min-vh-100"> <!-- Tambahkan min-vh-100 -->
+    <div id="wrapper" class="d-flex flex-column min-vh-100">
       <div id="content-wrapper" class="flex-grow-1">
         <div id="content">
           <!-- Top Bar -->
@@ -29,11 +29,9 @@
               <a class="navbar-brand text-white fw-bold fs-3" href="{{ route('home') }}">
                 <i class="fas fa-industry me-2"></i> MPS-ITTI
               </a>
-
-              <a class="navbar-brand text-white fw-bold fs-3" href="{{ route('view') }}">
+              <a class="navbar-brand text-white fw-bold fs-3" href="{{ route('poList') }}">
                 <i class="fas fa-calendar me-2"></i> Planning Schedule Priview
               </a>
-
               <button type="submit" class="btn btn-outline-light" id="btLogout">
                 <i class="fas fa-sign-out-alt me-1"></i> Logout
               </button>

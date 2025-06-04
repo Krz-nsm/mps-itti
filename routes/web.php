@@ -27,7 +27,12 @@ Route::middleware(['checklogin'])->group(function () {
     Route::get('/data_filter', [ScheduleController::class, 'dataFilter'])->name('schedule.filterdata');
 
     Route::get('/view2', [ListViewController::class, 'index'])->name('view2');
+    Route::get('/Po-List', [ListViewController::class, 'poList'])->name('poList');
+    Route::get('/Schedule-List', [ListViewController::class, 'scheList'])->name('scheList');
+    Route::get('/Forecast-List', [ListViewController::class, 'forecastList'])->name('forecastList');
+    Route::get('/search/{item_code}', [ListViewController::class, 'searchForecast'])->name('search');
     Route::get('/load-data', [ListViewController::class, 'loadData'])->name('loadData');
+    Route::post('/get-stock-detail', [ListViewController::class, 'getStockDetail'])->name('getDetailStock');
     
     Route::get('/view', [ListViewController::class, 'index2'])->name('view');
     Route::get('/schedule/{item_code}', [ListViewController::class, 'getScheduleByItemCode'])->name('viewItem');

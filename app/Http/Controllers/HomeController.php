@@ -110,6 +110,7 @@ class HomeController extends Controller
             'start_date'     => 'required|date',
             'delivery_date'  => 'required|date',
             'machines'       => 'required|array',
+            'type'           => 'required|string',
             'machines.*'     => 'required|string'
         ]);
 
@@ -139,9 +140,10 @@ class HomeController extends Controller
                 'start_date'    => $validated['start_date'],
                 'end_date'      => $validated['delivery_date'],
                 'mesin_code'    => $machineCode,
+                'type'          => $validated['type'],
                 'dept'          => 'KNT',
                 'datecreated'   => now(),
-                'linked_id_machine' => $linkedId
+                'linked_id_machine' => $linkedId,
             ];
 
             DB::connection('sqlsrv')->table('schedule_mesin')->insert($dataToInsert);
