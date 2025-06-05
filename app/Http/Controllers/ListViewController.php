@@ -262,6 +262,52 @@ class ListViewController extends Controller
 
         list($Code1, $Code2, $Code3) = explode('-', $itemCode);
 
+        $dataHeading = DB::connection('DB2')->select("
+            SELECT
+                COALESCE(p.ORIGDLVSALORDLINESALORDERCODE, '-') AS ORIGDLVSALORDLINESALORDERCODE,
+                COALESCE(s.STATISTICALGROUPCODE, '-') AS STATISTICALGROUPCODE,
+                COALESCE(b.LOGICALWAREHOUSECODE, '-') AS LOGICALWAREHOUSECODE,
+                COALESCE(SUM(BASEPRIMARYQUANTITYUNIT), 0) AS TotalStock
+            FROM
+              BALANCE b
+            LEFT JOIN PRODUCTIONDEMAND p ON p.CODE = b.LOTCODE
+            LEFT JOIN SALESORDER s ON s.CODE = p.ORIGDLVSALORDLINESALORDERCODE
+            WHERE
+                b.DECOSUBCODE02 = ?
+            	AND b.DECOSUBCODE03 = ?
+                AND b.DECOSUBCODE04 = ?
+              AND b.LOGICALWAREHOUSECODE IN ('M021', 'M502')
+            GROUP BY
+              p.ORIGDLVSALORDLINESALORDERCODE,
+              b.LOGICALWAREHOUSECODE,
+              s.STATISTICALGROUPCODE",
+        [$Code1, $Code2, $Code3]);
+
+        $dataDetail = DB::connection('DB2')->select("
+            SELECT
+                COALESCE(p.ORIGDLVSALORDLINESALORDERCODE, '-') AS ORIGDLVSALORDLINESALORDERCODE,
+                COALESCE(b.LOTCODE, '-') AS LOTCODE,
+                COALESCE(s.STATISTICALGROUPCODE, '-') AS STATISTICALGROUPCODE,
+                COALESCE(p.EXTERNALREFERENCE, '-') AS EXTERNALREFERENCE,
+                COALESCE(b.LOGICALWAREHOUSECODE, '-') AS LOGICALWAREHOUSECODE,
+                ROUND(COALESCE(SUM(BASEPRIMARYQUANTITYUNIT), 0), 2) AS Stock
+            FROM
+              BALANCE b
+            LEFT JOIN PRODUCTIONDEMAND p ON p.CODE = b.LOTCODE
+            LEFT JOIN SALESORDER s ON s.CODE = p.ORIGDLVSALORDLINESALORDERCODE
+            WHERE
+                b.DECOSUBCODE02 = ?
+            	AND b.DECOSUBCODE03 = ?
+                AND b.DECOSUBCODE04 = ?
+              AND b.LOGICALWAREHOUSECODE IN ('M021', 'M502')
+            GROUP BY
+              p.ORIGDLVSALORDLINESALORDERCODE,
+              b.LOTCODE,
+              s.STATISTICALGROUPCODE,
+              p.EXTERNALREFERENCE,
+              b.LOGICALWAREHOUSECODE",
+        [$Code1, $Code2, $Code3]);
+
         $dataStock = DB::connection('DB2')->select("
             SELECT
                 COALESCE(b.LOTCODE, '-') AS LOTCODE,
@@ -287,7 +333,11 @@ class ListViewController extends Controller
             	b.LOGICALWAREHOUSECODE",
         [$Code1, $Code2, $Code3]);
 
-        return response()->json($dataStock);
+        return response()->json([
+            'dataHeading' => $dataHeading,
+            'dataDetail' => $dataDetail,
+            'dataStock' => $dataStock
+        ]);
     }
 
     // Untuk list item

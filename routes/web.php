@@ -5,6 +5,7 @@ use App\Http\Controllers\LoginController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\ScheduleController;
 use App\Http\Controllers\ListViewController;
+use App\Http\Controllers\MesinController;
 
 // Redirect root ke login
 Route::get('/', function () {
@@ -22,6 +23,8 @@ Route::middleware(['checklogin'])->group(function () {
     Route::get('/home', [HomeController::class, 'index'])->name('home');
     Route::get('/calculation', [HomeController::class, 'calculation'])->name('home.calculation');
     Route::post('/saveData', [HomeController::class, 'store'])->name('schedule.store');
+
+    Route::get('/loadMesin', [MesinController::class, 'index'])->name('loadMesin');
 
     Route::get('/schedule', [ScheduleController::class, 'index'])->name('schedule.index');
     Route::get('/data_filter', [ScheduleController::class, 'dataFilter'])->name('schedule.filterdata');

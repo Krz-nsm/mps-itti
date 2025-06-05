@@ -63,7 +63,7 @@ $(document).ready(function () {
   }
 
   $.ajax({
-    url: "{{ route('loadData') }}",
+    url: "{{ route('loadMesin') }}",
     method: 'GET',
     dataType: 'json',
     success: function (response) {
@@ -97,24 +97,34 @@ $(document).ready(function () {
       }
 
       const dataMesin = response.dataMesin || [];
+      const dataSchedule = response.dataSchedule || [];
       const groupedByJenis = {};
+      const normalizeCode = (code) => (code || '').trim();
 
       dataMesin.forEach(function (row) {
         const mesin = row.mesin_code;
-        const type = row.type;
         const jenis = row.jenis;
-        const start = normalizeDate(new Date(row.start_date)).toISOString().split("T")[0];
-        const end = normalizeDate(new Date(row.end_date)).toISOString().split("T")[0];
+
+        if (!groupedByJenis[jenis]) groupedByJenis[jenis] = {};
+        if (!groupedByJenis[jenis][mesin]) groupedByJenis[jenis][mesin] = [];
+      });
+
+      dataSchedule.forEach(row => {
+        const mesin = row.mesin_code;
+        const type = row.type;
+        const item_code = row.item_code;
+        const start = normalizeDate(new Date(row.start_date));
+        const end = normalizeDate(new Date(row.end_date));
+
+        // Cari jenis dari dataMesin
+        // const mesinInfo = dataMesin.find(m => m.mesin_code === mesin);
+        const mesinInfo = dataMesin.find(m => normalizeCode(m.mesin_code) === normalizeCode(mesin));
+        const jenis = mesinInfo ? mesinInfo.jenis : 'Lainnya';
 
         if (!groupedByJenis[jenis]) groupedByJenis[jenis] = {};
         if (!groupedByJenis[jenis][mesin]) groupedByJenis[jenis][mesin] = [];
 
-        groupedByJenis[jenis][mesin].push({
-          item_code: row.item_code,
-          start: start,
-          end: end,
-          type: type
-        });
+        groupedByJenis[jenis][mesin].push({ item_code, start, end, type });
       });
 
       Object.keys(groupedByJenis).forEach(function (jenis) {
@@ -139,26 +149,22 @@ $(document).ready(function () {
           let rowHtml = `<tr><td><strong>${mesin}</strong></td>`;
 
           dates.forEach(function (d) {
-            let matchedJobs = mesinMap[mesin].filter(job => {
-              let jobStart = normalizeDate(new Date(job.start));
-              let jobEnd = normalizeDate(new Date(job.end));
-              let current = normalizeDate(d);
-              return current >= jobStart && current <= jobEnd;
-            });
+            const current = normalizeDate(d);
+            const matchedJobs = mesinMap[mesin].filter(job =>
+              current >= job.start && current <= job.end
+            );
 
             if (d.getDay() === 0) {
               rowHtml += '<td style="background-color:#f8d7da;"></td>';
             } else if (matchedJobs.length > 0) {
-              matchedJobs.forEach(matchedJob => {
-                let bgColor = typeColorMap[matchedJob.type] || '#dee2e6';
-              rowHtml += `<td style="background-color:${bgColor}">
-                <div class="cell-item">
-                  <strong>${matchedJob.item_code}</strong><br>
-                  <small>${matchedJob.type}</small>
-                </div>
-              </td>`;
-              });
-              rowHtml += `</td>`;
+              let content = matchedJobs.map(job => {
+                const bgColor = typeColorMap[job.type] || '#dee2e6';
+                return `<div class="cell-item" style="background-color:${bgColor}; padding: 2px; margin-bottom: 2px;">
+                          <strong>${job.item_code}</strong><br>
+                          <small>${job.type}</small>
+                        </div>`;
+              }).join('');
+              rowHtml += `<td>${content}</td>`;
             } else {
               rowHtml += '<td></td>';
             }
@@ -169,10 +175,7 @@ $(document).ready(function () {
         });
       });
 
-      // Click cell item (optional event)
       $('.cell-item').on('click', function () {
-        // Bisa tampilkan modal, tooltip, dll
-        // $('#dataModal').modal('show');
       });
     },
     error: function (xhr, status, error) {

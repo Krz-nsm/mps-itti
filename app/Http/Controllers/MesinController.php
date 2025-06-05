@@ -7,7 +7,12 @@ class MesinController extends Controller
 {
     public function index()
     {
-       $machines = DB::table('machines')->get();
-        return view('mesin.index', compact('mesin'));
+       $dataMesin = DB::connection('sqlsrv')->select('EXEC sp_get_machine');
+       $dataSchedule = DB::connection('sqlsrv')->select('EXEC sp_get_shedule');
+
+       return response()->json([
+            'dataMesin' => $dataMesin,
+            'dataSchedule' => $dataSchedule,
+        ]);
     }
 }
