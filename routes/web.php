@@ -32,6 +32,7 @@ Route::middleware(['checklogin'])->group(function () {
     Route::get('/view2', [ListViewController::class, 'index'])->name('view2');
     Route::get('/Po-List', [ListViewController::class, 'poList'])->name('poList');
     Route::get('/Schedule-List', [ListViewController::class, 'scheList'])->name('scheList');
+    Route::post('/Edit-Schedule', [ListViewController::class, 'editSchedule'])->name('editSchedule');
     Route::get('/Forecast-List', [ListViewController::class, 'forecastList'])->name('forecastList');
     Route::get('/search/{item_code}', [ListViewController::class, 'searchForecast'])->name('search');
     Route::get('/load-data', [ListViewController::class, 'loadData'])->name('loadData');

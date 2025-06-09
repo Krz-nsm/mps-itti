@@ -35,6 +35,38 @@ class ListViewController extends Controller
         ]);
     }
 
+    public function editSchedule(Request $request)
+    {
+        $scheduleData = $request->input('schedule');
+
+        if (!is_array($scheduleData)) {
+            return response()->json(['error' => 'Data tidak valid'], 400);
+        }
+
+        foreach ($scheduleData as $row) {
+            $item_code = $row['item_code'] ?? null;
+            $type = $row['type'] ?? null;
+            $tanggal = $row['tanggal'] ?? null; // format YYYY-MM-DD
+            $mesin_from = $row['mesin_from'] ?? null;
+            $mesin_to = $row['mesin_to'] ?? null;
+
+            if (!$item_code || !$type || !$tanggal || !$mesin_to) {
+                continue; // skip data yang tidak lengkap
+            }
+
+            // Panggil stored procedure (ganti dengan nama SP kamu)
+            DB::connection('sqlsrv')->statement('EXEC sp_edit_schedule ?, ?, ?, ?, ?', [
+                $item_code,
+                $type,
+                $tanggal,
+                $mesin_from,
+                $mesin_to
+            ]);
+        }
+
+        return response()->json(['message' => 'Schedule berhasil disimpan']);
+    }
+
     public function forecastList(){
         $itemCode = DB::connection('sqlsrv')->select('EXEC sp_get_unique_item_codes');
         return view('forecastList',[

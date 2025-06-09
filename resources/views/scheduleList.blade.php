@@ -3,187 +3,337 @@
 
 @section('content')
 
-@php
-use Carbon\Carbon;
-@endphp
+  @php
+    use Carbon\Carbon;
+  @endphp
 
-<ul class="nav nav-tabs">
-  <li class="nav-item">
-    <a class="nav-link" href="{{ route('poList') }}">PO With Greige Delivery Date</a>
-  </li>
-  <li class="nav-item">
-    <a class="nav-link active" aria-current="page" href="{{ route('scheList') }}">Schedule List Machine</a>
-  </li>
-  <li class="nav-item">
-    <a class="nav-link" href="{{ route('forecastList') }}">Detail Product</a>
-  </li>
-</ul>
+  <ul class="nav nav-tabs">
+    <li class="nav-item">
+      <a class="nav-link" href="{{ route('poList') }}">PO With Greige Delivery Date</a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link active" aria-current="page" href="{{ route('scheList') }}">Schedule List Machine</a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link" href="{{ route('forecastList') }}">Detail Product</a>
+    </li>
+  </ul>
 
-<div class="card shadow-sm mt-3">
-  <div class="card-body table-responsive">
-    <table id="itemTable" class="table table-bordered">
-      <thead>
-        <tr id="tableHead">
-          <th>Mesin</th>
-        </tr>
-      </thead>
-      <tbody id="tableBody">
-        <!-- Collapsible rows will be injected here -->
-      </tbody>
-    </table>
-  </div>
-</div>
-
-<!-- Modal (Optional) -->
-<div class="modal fade" id="dataModal" tabindex="-1" aria-hidden="true">
-  <div class="modal-dialog">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title">Machine Detail</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-      </div>
-      <div class="modal-body">
-        <p>Detail goes here...</p>
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-        <button type="button" class="btn btn-primary">Save changes</button>
-      </div>
+  <div class="card shadow-sm mt-3">
+    <div class="card-body table-responsive">
+      <button id="editBtx" class="btn btn-success btn-sm mr-4">Edit Schedule</button>
+      <table id="itemTable" class="table table-bordered">
+        <thead>
+          <tr id="tableHead">
+            <th>Mesin</th>
+          </tr>
+        </thead>
+        <tbody id="tableBody">
+          <!-- Collapsible rows will be injected here -->
+        </tbody>
+      </table>
     </div>
   </div>
-</div>
 
 @endsection
 
 @push('scripts')
 <script>
-$(document).ready(function () {
+  let undoStack = [];
+  let isEditMode = false;
+  let selectedItems = [];
+  let editedSchedule = [];
+  let autoScrollInterval = null;
+
+  const typeColorMap = {
+    'Po Greige': '#cce5ff',
+    'Sche Plann': '#d4edda',
+    'Forecast': '#fce5cd',
+  };
+
+  $(document).ready(function () {
+    $.ajax({
+      url: "{{ route('loadMesin') }}",
+      method: 'GET',
+      dataType: 'json',
+      success: function (response) {
+        enableMultiSelect();
+
+        const today = new Date();
+        const startDate = new Date(today);
+        const endDate = new Date(today);
+        startDate.setDate(today.getDate() - 1);
+        endDate.setFullYear(today.getFullYear() + 1);
+
+        const dates = [];
+        let currentDate = new Date(startDate);
+
+        while (currentDate <= endDate) {
+          const day = currentDate.getDate().toString().padStart(2, '0');
+          const month = (currentDate.getMonth() + 1).toString().padStart(2, '0');
+          const year = currentDate.getFullYear();
+          const formattedDate = `${day}-${month}-${year}`;
+          const dayOfWeek = currentDate.getDay();
+
+          $('#tableHead').append(`<th${dayOfWeek === 0 ? ' style="color:red;"' : ''}>${formattedDate}</th>`);
+          dates.push(new Date(currentDate));
+          currentDate.setDate(currentDate.getDate() + 1);
+        }
+
+        renderSchedule(response, dates);
+      },
+      error: function (xhr, status, error) {
+        alert('Gagal mengambil data: ' + error);
+        console.error(error);
+      }
+    });
+
+    $('#editBtx').on('click', function () {
+      isEditMode = !isEditMode;
+      $(this).toggleClass('btn-success btn-danger')
+             .text(isEditMode ? 'Save Schedule' : 'Edit Schedule');
+
+      if (isEditMode) {
+        enableMultiSelect();
+        enableDragAndDropMulti();
+      } else {
+        $('.cell-item').attr('draggable', false).removeClass('selected');
+        selectedItems = [];
+      }
+    });
+
+    $(document).on('keydown', function (e) {
+      if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+        e.preventDefault();
+        if (isEditMode) saveSchedule();
+      }
+    });
+  });
+
   function normalizeDate(date) {
     return new Date(date.getFullYear(), date.getMonth(), date.getDate());
   }
 
-  $.ajax({
-    url: "{{ route('loadMesin') }}",
-    method: 'GET',
-    dataType: 'json',
-    success: function (response) {
-      const typeColorMap = {
-        'Po Greige': '#cce5ff',
-        'Sche Plann': '#d4edda',
-        'Forecast': '#fce5cd',
-      };
+  function parseDateFromString(str) {
+    const [day, month, year] = str.split('-').map(Number);
+    return new Date(year, month - 1, day);
+  }
 
+  function formatDate(date) {
+    return new Date(date).toISOString().split('T')[0];
+  }
 
-      let today = new Date();
-      let startDate = new Date(today);
-      startDate.setDate(startDate.getDate() - 1);
-      let endDate = new Date(today);
-      endDate.setFullYear(endDate.getFullYear() + 1);
+  function enableMultiSelect() {
+    $('.cell-item').off('click').on('click', function (e) {
+      if (!isEditMode) return;
 
-      let currentDate = new Date(startDate);
-      let theadRow = $('#tableHead');
-      let dates = [];
+      if (e.ctrlKey || e.metaKey) {
+        $(this).toggleClass('selected');
+        const index = selectedItems.indexOf(this);
 
-      while (currentDate <= endDate) {
-        let day = currentDate.getDate().toString().padStart(2, '0');
-        let month = (currentDate.getMonth() + 1).toString().padStart(2, '0');
-        let year = currentDate.getFullYear();
-        let formattedDate = `${day}-${month}-${year}`;
-        let dayOfWeek = currentDate.getDay();
+        if (index > -1) selectedItems.splice(index, 1);
+        else selectedItems.push(this);
+      } else {
+        $('.cell-item').removeClass('selected');
+        selectedItems = [this];
+        $(this).addClass('selected');
+      }
+    });
+  }
 
-        theadRow.append(`<th${dayOfWeek === 0 ? ' style="color:red;"' : ''}>${formattedDate}</th>`);
-        dates.push(new Date(currentDate));
-        currentDate.setDate(currentDate.getDate() + 1);
+  function enableDragAndDropMulti() {
+    $('.cell-item').attr('draggable', true).on('dragstart', function (e) {
+      if (!isEditMode || selectedItems.length === 0) return;
+
+      const selected = selectedItems.map(el => el.outerHTML);
+      e.originalEvent.dataTransfer.setData('text/plain', JSON.stringify(selected));
+
+      $('.cell-item').attr('draggable', false).filter('.selected').attr('draggable', true);
+    });
+
+    $('#itemTable td').on('dragover', function (e) {
+      e.preventDefault();
+      if (!isEditMode || $(this).children('.cell-item').length > 0) return;
+      $(this).addClass('drop-target');
+    });
+
+    $('#itemTable td').on('dragleave', function () {
+      $(this).removeClass('drop-target');
+    });
+
+    $('#itemTable td').on('drop', function (e) {
+      e.preventDefault();
+      $(this).removeClass('drop-target');
+      if (!isEditMode || selectedItems.length === 0) return;
+
+      const $targetCell = $(this);
+      const targetIndex = $targetCell.index();
+      const $targetRow = $targetCell.closest('tr');
+      const selectedRow = $(selectedItems[0]).closest('tr');
+
+      if (!selectedItems.every(item => $(item).closest('tr')[0] === selectedRow[0])) {
+        alert('Harus memilih item dari baris yang sama!');
+        return;
       }
 
-      const dataMesin = response.dataMesin || [];
-      const dataSchedule = response.dataSchedule || [];
-      const groupedByJenis = {};
-      const normalizeCode = (code) => (code || '').trim();
+      selectedItems.sort((a, b) => $(a).parent().index() - $(b).parent().index());
+      const $cells = $targetRow.find('td');
 
-      dataMesin.forEach(function (row) {
-        const mesin = row.mesin_code;
-        const jenis = row.jenis;
+      selectedItems.forEach((item, i) => {
+        const $originCell = $(item).parent();
+        const $destCell = $cells.eq(targetIndex + i);
 
-        if (!groupedByJenis[jenis]) groupedByJenis[jenis] = {};
-        if (!groupedByJenis[jenis][mesin]) groupedByJenis[jenis][mesin] = [];
-      });
+        if ($destCell.length && $destCell.children('.cell-item').length === 0) {
+          $originCell.css('background-color', '');
+          $(item).removeClass('selected');
+          $destCell.append(item);
 
-      dataSchedule.forEach(row => {
-        const mesin = row.mesin_code;
-        const type = row.type;
-        const item_code = row.item_code;
-        const start = normalizeDate(new Date(row.start_date));
-        const end = normalizeDate(new Date(row.end_date));
+          const bgColor = typeColorMap[$(item).data('type')] || '#dee2e6';
+          $destCell.css('background-color', bgColor);
+          $(item).hide().fadeIn(150);
 
-        // Cari jenis dari dataMesin
-        // const mesinInfo = dataMesin.find(m => m.mesin_code === mesin);
-        const mesinInfo = dataMesin.find(m => normalizeCode(m.mesin_code) === normalizeCode(mesin));
-        const jenis = mesinInfo ? mesinInfo.jenis : 'Lainnya';
+          const tanggal = $('#tableHead th').eq($destCell.index()).text().trim();
+          editedSchedule = editedSchedule.filter(e => !(e.item_code === $(item).find('strong').text().trim() && e.tanggal_str === tanggal));
 
-        if (!groupedByJenis[jenis]) groupedByJenis[jenis] = {};
-        if (!groupedByJenis[jenis][mesin]) groupedByJenis[jenis][mesin] = [];
-
-        groupedByJenis[jenis][mesin].push({ item_code, start, end, type });
-      });
-
-      Object.keys(groupedByJenis).forEach(function (jenis) {
-        const collapseId = 'collapse_' + jenis.replace(/\s+/g, '_');
-
-        $('#itemTable').append(`
-          <tbody>
-            <tr class="bg-light">
-              <td colspan="${dates.length + 1}">
-                <button class="btn btn-sm btn-link toggle-section" data-bs-toggle="collapse" data-bs-target="#${collapseId}" aria-expanded="true">
-                  <strong>${jenis}</strong>
-                </button>
-              </td>
-            </tr>
-          </tbody>
-        `);
-
-        $('#itemTable').append(`<tbody id="${collapseId}" class="collapse show"></tbody>`);
-
-        const mesinMap = groupedByJenis[jenis];
-        Object.keys(mesinMap).forEach(function (mesin) {
-          let rowHtml = `<tr><td><strong>${mesin}</strong></td>`;
-
-          dates.forEach(function (d) {
-            const current = normalizeDate(d);
-            const matchedJobs = mesinMap[mesin].filter(job =>
-              current >= job.start && current <= job.end
-            );
-
-            if (d.getDay() === 0) {
-              rowHtml += '<td style="background-color:#f8d7da;"></td>';
-            } else if (matchedJobs.length > 0) {
-              let content = matchedJobs.map(job => {
-                const bgColor = typeColorMap[job.type] || '#dee2e6';
-                return `<div class="cell-item" style="background-color:${bgColor}; padding: 2px; margin-bottom: 2px;">
-                          <strong>${job.item_code}</strong><br>
-                          <small>${job.type}</small>
-                        </div>`;
-              }).join('');
-              rowHtml += `<td>${content}</td>`;
-            } else {
-              rowHtml += '<td></td>';
-            }
+          editedSchedule.push({
+            item_code: $(item).find('strong').text().trim(),
+            type: $(item).data('type'),
+            tanggal_str: tanggal,
+            tanggal: parseDateFromString(tanggal),
+            mesin_from: $(item).data('mesin'),
+            mesin_to: $targetRow.find('td:first').text().trim()
           });
+        }
+      });
 
-          rowHtml += '</tr>';
-          $(`#${collapseId}`).append(rowHtml);
+      selectedItems = [];
+    });
+  }
+
+  function saveSchedule() {
+    const newSchedule = editedSchedule.map(item => ({
+      item_code: item.item_code,
+      type: item.type,
+      tanggal: formatDate(item.tanggal),
+      mesin_from: item.mesin_from,
+      mesin_to: item.mesin_to
+    }));
+
+    console.log("Schedule yang akan disimpan:", newSchedule);
+
+    $.ajax({
+      url: "{{ route('editSchedule') }}",
+      type: "POST",
+      headers: {
+        'X-CSRF-TOKEN': '{{ csrf_token() }}'
+      },
+      data: {
+        schedule: newSchedule
+      },
+      success: function () {
+        location.reload();
+      },
+      error: function (xhr, status, error) {
+        console.error("Gagal menyimpan schedule:", error);
+        alert("Gagal menyimpan jadwal. Coba lagi.");
+      }
+    });
+  }
+
+  function renderSchedule(response, dates) {
+    const dataMesin = response.dataMesin || [];
+    const dataSchedule = response.dataSchedule || [];
+    const groupedByJenis = {};
+
+    dataMesin.forEach(row => {
+      const mesin = row.mesin_code.trim();
+      const jenis = row.jenis;
+      if (!groupedByJenis[jenis]) groupedByJenis[jenis] = {};
+      groupedByJenis[jenis][mesin] = [];
+    });
+
+    dataSchedule.forEach(row => {
+      const mesin = row.mesin_code.trim();
+      const item_code = row.item_code;
+      const start = normalizeDate(new Date(row.start_date));
+      const end = normalizeDate(new Date(row.end_date));
+      const type = row.type;
+      const jenis = (dataMesin.find(m => m.mesin_code.trim() === mesin.trim()) || {}).jenis || 'Lainnya';
+      if (!groupedByJenis[jenis]) groupedByJenis[jenis] = {};
+      if (!groupedByJenis[jenis][mesin]) groupedByJenis[jenis][mesin] = [];
+      groupedByJenis[jenis][mesin].push({ item_code, start, end, type, mesin });
+    });
+
+    Object.keys(groupedByJenis).forEach(jenis => {
+      const collapseId = 'collapse_' + jenis.replace(/\s+/g, '_');
+
+      $('#itemTable').append(`
+        <tbody>
+          <tr class="bg-light">
+            <td colspan="${dates.length + 1}">
+              <button class="btn btn-sm btn-link toggle-section" data-bs-toggle="collapse" data-bs-target="#${collapseId}" aria-expanded="true">
+                <strong>${jenis}</strong>
+              </button>
+            </td>
+          </tr>
+        </tbody>
+        <tbody id="${collapseId}" class="collapse show"></tbody>
+      `);
+
+      Object.entries(groupedByJenis[jenis]).forEach(([mesin, jobs]) => {
+        let rowHtml = `<tr><td><strong>${mesin}</strong></td>`;
+
+        dates.forEach(d => {
+          const current = normalizeDate(d);
+          const matchedJobs = jobs.filter(job => current >= job.start && current <= job.end);
+
+          if (d.getDay() === 0) {
+            rowHtml += '<td style="background-color:#f8d7da;"></td>';
+          } else if (matchedJobs.length) {
+            const content = matchedJobs.map(job => `
+              <div class="cell-item" data-type="${job.type}" data-mesin="${job.mesin}" style="padding: 2px; margin-bottom: 2px;">
+                <strong>${job.item_code}</strong><br>
+                <small>${job.type}</small>
+              </div>
+            `).join('');
+            const bgColor = typeColorMap[matchedJobs[0].type] || '#dee2e6';
+            rowHtml += `<td style="background-color:${bgColor};">${content}</td>`;
+          } else {
+            rowHtml += '<td></td>';
+          }
         });
-      });
 
-      $('.cell-item').on('click', function () {
+        rowHtml += '</tr>';
+        $(`#${collapseId}`).append(rowHtml);
       });
-    },
-    error: function (xhr, status, error) {
-      alert('Gagal mengambil data: ' + error);
-      console.error(error);
+    });
+  }
+
+  $(document).on('dragover', function(e) {
+    const scrollMargin = 80;
+    const scrollSpeed = 20;
+
+    const mouseY = e.originalEvent.clientY;
+    const mouseX = e.originalEvent.clientX;
+    const windowHeight = $(window).height();
+    const windowWidth = $(window).width();
+
+    if (mouseY > windowHeight - scrollMargin) {
+      window.scrollBy(0, scrollSpeed);
+    }
+
+    if (mouseY < scrollMargin) {
+      window.scrollBy(0, -scrollSpeed);
+    }
+
+    if (mouseX > windowWidth - scrollMargin) {
+      window.scrollBy(scrollSpeed, 0);
+    }
+  
+    if (mouseX < scrollMargin) {
+      window.scrollBy(-scrollSpeed, 0);
     }
   });
-});
 </script>
 
 <style>
@@ -205,10 +355,19 @@ $(document).ready(function () {
     font-size: 14px;
   }
   .toggle-section::before {
-    content: "▼ ";
+    content: "\25BC ";
   }
   .toggle-section.collapsed::before {
-    content: "► ";
+    content: "\25B6 ";
+  }
+  .cell-item.selected {
+    border: 2px solid #007bff;
+    background-color: #cce5ff;
+  }
+  .drop-target {
+    outline: 2px dashed #007bff;
+    background-color: rgba(0, 123, 255, 0.1);
   }
 </style>
+
 @endpush
